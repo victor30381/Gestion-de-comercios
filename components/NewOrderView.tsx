@@ -210,7 +210,7 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                     let clientY = headerY + 12;
 
                     // Client Name - Larger
-                    doc.setFontSize(22); // Increased from 18
+                    doc.setFontSize(20); // Reduced from 22
                     doc.setFont("helvetica", "bold");
                     doc.text(`Cliente: ${clientName}`, 5, clientY);
                     clientY += 10; // Increased spacing
@@ -292,7 +292,7 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                         currentY += 2;
 
                         // Resta - Larger
-                        drawTotalRow("Resta:", `$${pendingBalance.toLocaleString()}`, true, 24);
+                        drawTotalRow("Resta:", `$${pendingBalance.toLocaleString()}`, true, 22);
                     } else {
                         currentY += 2;
                     }
