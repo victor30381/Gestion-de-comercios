@@ -74,7 +74,7 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({ orders, onEdit, onVi
                                             {new Date(order.deliveryDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}
                                         </span>
                                         {order.items.map(item => item.name).join(', ')}
-                                        <span className="text-stone-400 block text-xs">({order.clientName})</span>
+                                        <span className="text-stone-500 block text-base font-bold mt-1">({order.clientName})</span>
                                     </div>
                                     <div className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700">
                                         Pendiente
@@ -135,7 +135,7 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({ orders, onEdit, onVi
                                         <span className="line-through">
                                             {order.items.map(item => item.name).join(', ')}
                                         </span>
-                                        <span className="text-stone-400 block text-xs">({order.clientName})</span>
+                                        <span className="text-stone-500 block text-base font-bold mt-1">({order.clientName})</span>
                                     </div>
                                 </div>
 
