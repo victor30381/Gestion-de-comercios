@@ -45,3 +45,33 @@ export const getConversionFactor = (unit: Unit): number => {
     default: return 1;
   }
 };
+
+export interface Client {
+  id: string;
+  userId: string;
+  name: string;
+  phone: string;
+  address: string;
+}
+
+export interface OrderItem {
+  id: string;
+  name: string; // "Cheesecake Keto"
+  amount: number; // 200
+  unit: string; // "gr/ml/un"
+  quantity: number; // 1
+  price: number; // 3555
+}
+
+export interface Order {
+  id: string;
+  userId: string;
+  clientId: string;
+  clientName: string;
+  items: OrderItem[];
+  deliveryDate: Date;
+  status: 'pending' | 'completed' | 'canceled';
+  total: number;
+  deposit: number; // Seña
+  createdAt: Date;
+}
