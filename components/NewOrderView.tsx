@@ -210,29 +210,29 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                     let clientY = headerY + 12;
 
                     // Client Name - Larger
-                    doc.setFontSize(18); // Increased from 14
+                    doc.setFontSize(22); // Increased from 18
                     doc.setFont("helvetica", "bold");
                     doc.text(`Cliente: ${clientName}`, 5, clientY);
-                    clientY += 8; // Increased spacing
+                    clientY += 10; // Increased spacing
 
                     // Extra Details - Phone/Address
-                    doc.setFontSize(12); // Increased from 10
+                    doc.setFontSize(16); // Increased from 12
                     doc.setFont("helvetica", "normal");
 
                     if (clientPhone) {
                         doc.text(`Tel: ${clientPhone}`, 5, clientY);
-                        clientY += 6; // Increased spacing
+                        clientY += 8; // Increased spacing
                     }
                     if (clientAddress) {
                         // Handle long addresses
                         const splitAddress = doc.splitTextToSize(`Dir: ${clientAddress}`, 70);
                         doc.text(splitAddress, 5, clientY);
-                        clientY += (splitAddress.length * 6); // Increased line height
+                        clientY += (splitAddress.length * 8); // Increased line height
                     }
 
                     // Delivery Date
                     doc.text(`Fecha Entrega: ${dateStr}`, 5, clientY);
-                    clientY += 6; // Increased spacing
+                    clientY += 8; // Increased spacing
 
                     doc.setLineWidth(0.5);
                     doc.line(5, clientY + 2, 75, clientY + 2);
@@ -278,7 +278,7 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                         doc.setFontSize(fontSize > 0 ? fontSize : (isBold ? 12 : 11));
                         doc.text(label, 45, currentY, { align: "right" });
                         doc.text(value, 75, currentY, { align: "right" });
-                        currentY += (fontSize > 12 ? 8 : 6); // More space for larger fonts
+                        currentY += (fontSize > 12 ? 10 : 6); // More space for larger fonts
                     };
 
                     drawTotalRow("Total:", `$${total.toLocaleString()}`, true);
@@ -292,7 +292,7 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                         currentY += 2;
 
                         // Resta - Larger
-                        drawTotalRow("Resta:", `$${pendingBalance.toLocaleString()}`, true, 16);
+                        drawTotalRow("Resta:", `$${pendingBalance.toLocaleString()}`, true, 24);
                     } else {
                         currentY += 2;
                     }
