@@ -22,9 +22,14 @@ const Header: React.FC<HeaderProps> = ({ user, title, onLogout, toggleSidebar })
                     </svg>
                 </button>
 
-                <h2 className="text-2xl md:text-3xl font-serif font-bold text-brand-brown">
-                    {title}
-                </h2>
+                <div className="flex flex-col">
+                    <h2 className="text-2xl md:text-3xl font-serif font-bold text-brand-brown leading-tight">
+                        {title}
+                    </h2>
+                    <p className="text-sm md:text-base text-stone-500 font-medium capitalize">
+                        {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </p>
+                </div>
             </div>
 
             <div className="flex items-center gap-4">

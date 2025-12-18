@@ -20,7 +20,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, setActiveTab
 
     const getTitle = () => {
         switch (activeTab) {
-            case 'dashboard': return 'Dashboard Principal';
+            case 'dashboard': return 'Dashboard';
             case 'calculator': return 'Calculadora Maestra';
             case 'orders': return 'Gestión de Pedidos';
             default: return 'Dashboard';
