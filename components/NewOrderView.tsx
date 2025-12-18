@@ -9,6 +9,7 @@ interface NewOrderViewProps {
     onBack: () => void;
     initialOrder?: Order | null;
     readOnly?: boolean;
+    initialDate?: Date;
 }
 
 // Extended OrderItem for local state to include recipe tracking
@@ -16,7 +17,7 @@ interface LocalOrderItem extends OrderItem {
     recipeId?: string;
 }
 
-const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrder, readOnly }) => {
+const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrder, readOnly, initialDate }) => {
     // Data State
     const [clients, setClients] = useState<Client[]>([]);
     const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -59,7 +60,7 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
         };
     }, [userId]);
 
-    // Pre-fill for Edit Mode
+    // Pre-fill for Edit Mode or Initial Date
     useEffect(() => {
         if (initialOrder) {
             setSelectedClientId(initialOrder.clientId);
@@ -83,8 +84,11 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
             }
 
             setDeposit(initialOrder.deposit || 0);
+        } else if (initialDate) {
+            const isoDate = initialDate.toISOString().split('T')[0];
+            setDeliveryDate(isoDate);
         }
-    }, [initialOrder]);
+    }, [initialOrder, initialDate]);
 
     // Calculations
     const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);

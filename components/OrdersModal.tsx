@@ -10,17 +10,18 @@ interface OrdersModalProps {
     userId: string;
     initialOrder?: Order | null;
     isReadOnly?: boolean;
+    initialDate?: Date | null;
 }
 
-const OrdersModal: React.FC<OrdersModalProps> = ({ isOpen, onClose, userId, initialOrder, isReadOnly }) => {
+const OrdersModal: React.FC<OrdersModalProps> = ({ isOpen, onClose, userId, initialOrder, isReadOnly, initialDate }) => {
     const [view, setView] = useState<'menu' | 'clients' | 'newOrder'>('menu');
 
-    // Reset view to menu every time the modal opens, UNLESS editing
+    // Reset view to menu every time the modal opens, UNLESS editing or creating new from calendar
     React.useEffect(() => {
         if (isOpen) {
-            setView(initialOrder ? 'newOrder' : 'menu');
+            setView((initialOrder || initialDate) ? 'newOrder' : 'menu');
         }
-    }, [isOpen, initialOrder]);
+    }, [isOpen, initialOrder, initialDate]);
 
     if (!isOpen) return null;
 
@@ -119,6 +120,7 @@ const OrdersModal: React.FC<OrdersModalProps> = ({ isOpen, onClose, userId, init
                         onBack={() => setView('menu')}
                         initialOrder={initialOrder}
                         readOnly={isReadOnly}
+                        initialDate={initialDate || undefined}
                     />
                 )}
 

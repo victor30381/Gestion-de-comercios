@@ -17,7 +17,7 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({ orders, onEdit, onVi
     const upcomingOrders = orders
         .filter(o => o.status !== 'completed' && new Date(o.deliveryDate) >= new Date(new Date().setHours(0, 0, 0, 0)))
         .sort((a, b) => new Date(a.deliveryDate).getTime() - new Date(b.deliveryDate).getTime())
-        .slice(0, 5);
+    // Limit removed to show all upcoming orders
 
     // Filter for delivered orders
     const deliveredOrders = orders
@@ -60,7 +60,7 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({ orders, onEdit, onVi
         <div className="w-full lg:w-80 flex flex-col gap-6">
             <div className="bg-brand-cream rounded-xl shadow-sm border border-[#E5DCD3] p-6">
                 <h3 className="text-xl font-serif font-bold text-brand-brown mb-4">Próximas Entregas</h3>
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                     {upcomingOrders.length > 0 ? (
                         upcomingOrders.map((order) => (
                             <div
@@ -195,14 +195,17 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, subtext, isAle
 );
 
 // --- CALENDAR WIDGET ---
+// --- CALENDAR WIDGET ---
 interface CalendarWidgetProps {
     orders: Order[];
+    onNewOrder?: (date: Date) => void;
+    onViewOrder?: (order: Order) => void;
 }
 
-export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ orders }) => {
+export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ orders, onNewOrder, onViewOrder }) => {
     const today = new Date();
-    // Simple state for current month view (defaults to current real month)
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [selectedDateDetails, setSelectedDateDetails] = useState<{ date: Date, orders: Order[] } | null>(null);
 
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -210,14 +213,9 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ orders }) => {
     const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 = Sun
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    // Adjust for Monday start (0=Mon, 6=Sun) if desired, but sticking to standard 0=Sun for simplicity or matching UI
-    // The previous mockup had "Dom" first. Let's keep Dom first.
-
-    // Generate dates
     const dates = Array.from({ length: daysInMonth }, (_, i) => i + 1);
     const startDayOffset = firstDayOfMonth;
 
-    // Helper to check orders on a date
     const getOrdersForDate = (day: number) => {
         return orders.filter(o => {
             const d = new Date(o.deliveryDate);
@@ -225,10 +223,69 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ orders }) => {
         });
     };
 
+    const handleDateClick = (day: number) => {
+        const date = new Date(year, month, day);
+        const dayOrders = getOrdersForDate(day);
+        setSelectedDateDetails({ date, orders: dayOrders });
+    };
+
     const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
     return (
-        <div className="bg-brand-cream rounded-xl shadow-sm border border-[#E5DCD3] p-6 flex-1">
+        <div className="bg-brand-cream rounded-xl shadow-sm border border-[#E5DCD3] p-6 flex-1 relative">
+
+            {/* Date Details Modal/Popover */}
+            {selectedDateDetails && (
+                <div className="absolute inset-0 z-10 bg-black/20 backdrop-blur-[1px] rounded-xl flex items-center justify-center p-4 animate-in fade-in duration-100">
+                    <div className="bg-white rounded-xl shadow-xl border border-brand-brown/10 p-4 w-full max-w-[280px] space-y-3" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center border-b border-brand-brown/10 pb-2">
+                            <h4 className="font-serif font-bold text-brand-brown">
+                                {selectedDateDetails.date.getDate()} de {monthNames[selectedDateDetails.date.getMonth()]}
+                            </h4>
+                            <button
+                                onClick={() => setSelectedDateDetails(null)}
+                                className="text-stone-400 hover:text-brand-brown"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {selectedDateDetails.orders.length > 0 ? (
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                <p className="text-xs font-bold text-brand-brown/60 uppercase">Pedidos:</p>
+                                {selectedDateDetails.orders.map(order => (
+                                    <button
+                                        key={order.id}
+                                        onClick={() => {
+                                            onViewOrder && onViewOrder(order);
+                                            setSelectedDateDetails(null);
+                                        }}
+                                        className="w-full text-left p-2 rounded bg-brand-cream hover:bg-brand-brown/10 text-sm text-brand-brown transition-colors flex items-center justify-between group"
+                                    >
+                                        <span className="font-medium truncate">{order.clientName}</span>
+                                        <span className="text-xs opacity-0 group-hover:opacity-100 text-brand-accent">Ver →</span>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-stone-500 italic py-2">Sin pedidos agendados</p>
+                        )}
+
+                        <button
+                            onClick={() => {
+                                onNewOrder && onNewOrder(selectedDateDetails.date);
+                                setSelectedDateDetails(null);
+                            }}
+                            className="w-full py-2 bg-brand-brown text-white text-sm font-bold rounded-lg hover:bg-[#5D4229] transition-colors shadow-sm flex items-center justify-center gap-1"
+                        >
+                            <span>+</span> Nuevo Pedido
+                        </button>
+                    </div>
+                    {/* Background click to close */}
+                    <div className="absolute inset-0 -z-10" onClick={() => setSelectedDateDetails(null)}></div>
+                </div>
+            )}
+
             <div className="flex justify-between items-center mb-6">
                 <button
                     onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
@@ -262,16 +319,17 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ orders }) => {
                     return (
                         <div
                             key={date}
+                            onClick={() => handleDateClick(date)}
                             className={`
-                                aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer transition-colors relative
-                                ${isToday ? 'bg-brand-accent/20 border border-brand-accent' : 'hover:bg-white'}
-                                ${hasDelivery ? 'bg-white font-bold' : ''}
+                                aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer transition-all relative
+                                ${isToday ? 'bg-brand-accent/20 border border-brand-accent' : 'hover:bg-white hover:shadow-md'}
+                                ${hasDelivery ? 'bg-white font-bold border border-stone-100' : ''}
                             `}
-                            title={hasDelivery ? `${dayOrders.length} entregas` : ''}
+                            title={hasDelivery ? `${dayOrders.length} entregas` : 'Crear Pedido'}
                         >
                             <span className={`text-sm ${hasDelivery ? 'font-bold text-brand-brown' : 'text-stone-500'}`}>{date}</span>
                             {hasDelivery && (
-                                <span className="text-xl leading-none mt-1">🍪</span>
+                                <span className="text-xl leading-none mt-1 animate-pulse">🍪</span>
                             )}
                         </div>
                     );

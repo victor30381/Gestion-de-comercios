@@ -8,9 +8,10 @@ interface DashboardProps {
     userId: string;
     onEditOrder?: (order: Order) => void;
     onViewOrder?: (order: Order) => void;
+    onNewOrderWithDate?: (date: Date) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ userId, onEditOrder, onViewOrder }) => {
+const Dashboard: React.FC<DashboardProps> = ({ userId, onEditOrder, onViewOrder, onNewOrderWithDate }) => {
     const [orders, setOrders] = useState<Order[]>([]);
 
     useEffect(() => {
@@ -72,7 +73,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, onEditOrder, onViewOrder 
 
             {/* Main Content Row */}
             <div className="flex flex-col lg:flex-row gap-6">
-                <CalendarWidget orders={orders} />
+                <CalendarWidget orders={orders} onNewOrder={onNewOrderWithDate} onViewOrder={onViewOrder} />
                 <DeliveryList orders={orders} onEdit={onEditOrder} onView={onViewOrder} />
             </div>
         </div>

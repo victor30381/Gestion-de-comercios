@@ -13,6 +13,7 @@ function App() {
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<any>(null);
+  const [selectedDateForNewOrder, setSelectedDateForNewOrder] = useState<Date | null>(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
 
   // Auth State
@@ -32,7 +33,10 @@ function App() {
   const toggleCalculator = () => setIsCalculatorOpen(!isCalculatorOpen);
   const toggleOrdersModal = () => {
     setIsOrdersModalOpen(!isOrdersModalOpen);
-    if (isOrdersModalOpen) setEditingOrder(null);
+    if (isOrdersModalOpen) {
+      setEditingOrder(null);
+      setSelectedDateForNewOrder(null);
+    }
   }
 
   const handleEditOrder = (order: any) => {
@@ -44,6 +48,13 @@ function App() {
   const handleViewOrder = (order: any) => {
     setEditingOrder(order);
     setIsReadOnly(true);
+    setIsOrdersModalOpen(true);
+  };
+
+  const handleNewOrderWithDate = (date: Date) => {
+    setSelectedDateForNewOrder(date);
+    setEditingOrder(null);
+    setIsReadOnly(false);
     setIsOrdersModalOpen(true);
   };
 
@@ -132,7 +143,7 @@ function App() {
         onOpenCalculator={toggleCalculator}
         onOpenOrders={toggleOrdersModal}
       >
-        {activeTab === 'dashboard' && <Dashboard userId={user?.uid || ''} onEditOrder={handleEditOrder} onViewOrder={handleViewOrder} />}
+        {activeTab === 'dashboard' && <Dashboard userId={user?.uid || ''} onEditOrder={handleEditOrder} onViewOrder={handleViewOrder} onNewOrderWithDate={handleNewOrderWithDate} />}
         {/* Helper logic to keep other tabs valid if needed, though mostly using modals now */}
       </Layout>
 
@@ -153,6 +164,7 @@ function App() {
         userId={user.uid}
         initialOrder={editingOrder}
         isReadOnly={isReadOnly}
+        initialDate={selectedDateForNewOrder}
       />
     </>
   );
