@@ -52,13 +52,14 @@ const Calculator: React.FC<Props> = ({ userId }) => {
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: [80, 180]
+        format: [80, 140]
       });
 
       const drawContent = (withLogo: boolean) => {
         try {
           // Header
-          const headerY = withLogo ? 75 : 20;
+          // Adjusted headerY for smaller logo (50mm + 5mm padding = 55mm start, let's say 60 for safety)
+          const headerY = withLogo ? 60 : 20;
 
           // Shop Name
           doc.setFontSize(18);
@@ -67,30 +68,30 @@ const Calculator: React.FC<Props> = ({ userId }) => {
 
           // Divider
           doc.setFontSize(12);
-          doc.text("----------------------------------------", 40, headerY + 6, { align: "center" });
+          doc.text("----------------------------------------", 40, headerY + 5, { align: "center" });
 
           // Product Details
           doc.setFontSize(20);
           doc.setFont("helvetica", "bold");
-          doc.text(selectedRecipe.name, 40, headerY + 20, { align: "center", maxWidth: 75 });
+          doc.text(selectedRecipe.name, 40, headerY + 15, { align: "center", maxWidth: 75 });
 
           doc.setFontSize(16);
           doc.setFont("helvetica", "normal");
-          doc.text(`${weight} g`, 40, headerY + 34, { align: "center" });
+          doc.text(`${weight} g`, 40, headerY + 25, { align: "center" });
 
           // Price
           doc.setFontSize(32);
           doc.setFont("helvetica", "bold");
-          doc.text(`$${suggestedPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`, 40, headerY + 54, { align: "center" });
+          doc.text(`$${suggestedPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`, 40, headerY + 40, { align: "center" });
 
           // Footer
           doc.setFontSize(14);
           doc.setFont("helvetica", "italic");
-          doc.text("¡Gracias por su compra!", 40, headerY + 74, { align: "center" });
+          doc.text("¡Gracias por su compra!", 40, headerY + 55, { align: "center" });
 
           // Instagram Icon & Handle
           const startX = 16;
-          const iconY = headerY + 79;
+          const iconY = headerY + 60;
           const iconSize = 9;
 
           // Icon Background
@@ -145,9 +146,9 @@ const Calculator: React.FC<Props> = ({ userId }) => {
       img.onload = () => {
         try {
           // Original Logo Layout
-          // Logo resized to 60x60mm and centered (80-60)/2 = 10
+          // Logo resized to 50x50mm and centered (80-50)/2 = 15
           // FAST compression for basic optimization without quality loss
-          doc.addImage(img, 'PNG', 10, 5, 60, 60, undefined, 'FAST');
+          doc.addImage(img, 'PNG', 15, 5, 50, 50, undefined, 'FAST');
           drawContent(true);
         } catch (imgErr: any) {
           console.error("Error adding image:", imgErr);
