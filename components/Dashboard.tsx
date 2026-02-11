@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
 import { StatCard, CalendarWidget, DeliveryList } from './DashboardWidgets';
-import { Order } from '../types';
+import { Order, Recipe } from '../types';
 
 interface DashboardProps {
     userId: string;
@@ -13,12 +13,14 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ userId, onEditOrder, onViewOrder, onNewOrderWithDate }) => {
     const [orders, setOrders] = useState<Order[]>([]);
+    const [recipes, setRecipes] = useState<Recipe[]>([]);
 
     useEffect(() => {
         if (!userId) return;
 
-        const q = query(collection(db, 'orders'), where('userId', '==', userId));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        // Fetch Orders
+        const qOrders = query(collection(db, 'orders'), where('userId', '==', userId));
+        const unsubOrders = onSnapshot(qOrders, (snapshot) => {
             const fetchedOrders = snapshot.docs.map(doc => {
                 const data = doc.data();
                 return {
@@ -32,48 +34,90 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, onEditOrder, onViewOrder,
             setOrders(fetchedOrders);
         });
 
-        return () => unsubscribe();
+        // Fetch Recipes (for cost calculation)
+        const qRecipes = query(collection(db, 'recipes'), where('userId', '==', userId));
+        const unsubRecipes = onSnapshot(qRecipes, (snapshot) => {
+            setRecipes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Recipe)));
+        });
+
+        return () => {
+            unsubOrders();
+            unsubRecipes();
+        };
     }, [userId]);
+
+    // Helper: Calculate Material Cost for an Order
+    const calculateOrderCost = (order: Order) => {
+        return order.items.reduce((sum, item: any) => {
+            const recipe = recipes.find(r => r.id === item.recipeId);
+            if (recipe) {
+                // Real cost from recipe
+                return sum + (item.amount * recipe.costPerGram * item.quantity);
+            }
+            // Fallback for items not linked to a recipe (estimate 1/3 of price)
+            return sum + (item.price * item.quantity / 3);
+        }, 0);
+    };
 
     // Calculate Stats
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const ordersToday = orders.filter(o => {
+
+    // TODAY'S STATS
+    const todayOrdersList = orders.filter(o => {
         const d = new Date(o.deliveryDate);
         d.setHours(0, 0, 0, 0);
         return d.getTime() === today.getTime();
-    }).length;
+    });
 
+    const ordersTodayCount = todayOrdersList.length;
+    const dailyGross = todayOrdersList.reduce((sum, o) => sum + (o.total || 0), 0);
+    const dailyCost = todayOrdersList.reduce((sum, o) => sum + calculateOrderCost(o), 0);
+    const dailyProfit = Math.round(dailyGross - dailyCost);
+
+    // MONTHLY STATS
     const currentMonth = today.getMonth();
-    const monthlyIncome = orders
-        .filter(o => new Date(o.deliveryDate).getMonth() === currentMonth)
-        .reduce((sum, o) => {
-            const deliveryDate = new Date(o.deliveryDate);
-            deliveryDate.setHours(0, 0, 0, 0);
+    const monthlyOrdersList = orders.filter(o => new Date(o.deliveryDate).getMonth() === currentMonth);
 
-            // Check if delivered or past due
-            const isDelivered = o.status === 'completed';
-            const isPastDue = deliveryDate < today; // today is already normalized to 00:00:00
+    const monthlyStats = monthlyOrdersList.reduce((acc, o) => {
+        const deliveryDate = new Date(o.deliveryDate);
+        deliveryDate.setHours(0, 0, 0, 0);
 
-            if (isDelivered || isPastDue) {
-                return sum + (o.total || 0);
-            } else {
-                return sum + (o.deposit || 0);
-            }
-        }, 0);
+        // Logic for current logic of "income": Total if completed/past, Deposit if future
+        const isDelivered = o.status === 'completed';
+        const isPastDue = deliveryDate < today;
+
+        const orderValue = (isDelivered || isPastDue) ? (o.total || 0) : (o.deposit || 0);
+        const orderCost = calculateOrderCost(o);
+
+        return {
+            gross: acc.gross + orderValue,
+            cost: acc.cost + orderCost
+        };
+    }, { gross: 0, cost: 0 });
+
+    const monthlyProfit = Math.round(monthlyStats.gross - monthlyStats.cost);
 
     return (
         <div className="flex flex-col gap-8">
             {/* Stats Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard title="Pedidos Hoy:" value={ordersToday.toString()} />
-                <StatCard title="Ingresos Mes:" value={`$${monthlyIncome.toLocaleString()}`} />
-                {/* Placeholder for now or connect clients count if needed */}
+                <StatCard title="Pedidos Hoy:" value={ordersTodayCount.toString()} />
+                <StatCard
+                    title="Ingresos Hoy:"
+                    value={`$${dailyGross.toLocaleString()}`}
+                    subtext={`Ganancia: $${dailyProfit.toLocaleString()}`}
+                />
+                <StatCard
+                    title="Ingresos Mes:"
+                    value={`$${monthlyStats.gross.toLocaleString()}`}
+                    subtext={`Ganancia: $${monthlyProfit.toLocaleString()}`}
+                />
             </div>
 
             {/* Main Content Row */}
             <div className="flex flex-col lg:flex-row gap-6">
-                <CalendarWidget orders={orders} onNewOrder={onNewOrderWithDate} onViewOrder={onViewOrder} />
+                <CalendarWidget orders={orders} onNewOrder={onNewOrderWithDate} onViewOrder={onViewOrder} onEditOrder={onEditOrder} />
                 <DeliveryList orders={orders} onEdit={onEditOrder} onView={onViewOrder} />
             </div>
         </div>

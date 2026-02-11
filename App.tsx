@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import CalculatorModal from './components/CalculatorModal';
 import OrdersModal from './components/OrdersModal';
+import StockModal from './components/StockModal';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -12,6 +13,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
+  const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [selectedDateForNewOrder, setSelectedDateForNewOrder] = useState<Date | null>(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
@@ -31,6 +33,7 @@ function App() {
   }, []);
 
   const toggleCalculator = () => setIsCalculatorOpen(!isCalculatorOpen);
+  const toggleStockModal = () => setIsStockModalOpen(!isStockModalOpen);
   const toggleOrdersModal = () => {
     setIsOrdersModalOpen(!isOrdersModalOpen);
     if (isOrdersModalOpen) {
@@ -142,6 +145,7 @@ function App() {
         onLogout={() => signOut(auth)}
         onOpenCalculator={toggleCalculator}
         onOpenOrders={toggleOrdersModal}
+        onOpenStock={toggleStockModal}
       >
         {activeTab === 'dashboard' && <Dashboard userId={user?.uid || ''} onEditOrder={handleEditOrder} onViewOrder={handleViewOrder} onNewOrderWithDate={handleNewOrderWithDate} />}
         {/* Helper logic to keep other tabs valid if needed, though mostly using modals now */}
@@ -165,6 +169,12 @@ function App() {
         initialOrder={editingOrder}
         isReadOnly={isReadOnly}
         initialDate={selectedDateForNewOrder}
+      />
+
+      <StockModal
+        isOpen={isStockModalOpen}
+        onClose={() => setIsStockModalOpen(false)}
+        userId={user.uid}
       />
     </>
   );

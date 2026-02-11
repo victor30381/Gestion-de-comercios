@@ -52,64 +52,202 @@ const Calculator: React.FC<Props> = ({ userId }) => {
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: [80, 140]
+        format: [80, 230] // Aumentar altura considerablemente para evitar cortes
       });
 
       const drawContent = (withLogo: boolean) => {
         try {
           // Header
           // Adjusted headerY for smaller logo (50mm + 5mm padding = 55mm start, let's say 60 for safety)
-          const headerY = withLogo ? 60 : 20;
+          let currentY = withLogo ? 60 : 20;
 
-          // Shop Name
-          doc.setFontSize(18);
+          // Helper for centering text
+          const centerText = (text: string, y: number, fontSize: number, fontType: string = "normal") => {
+            doc.setFontSize(fontSize);
+            doc.setFont("helvetica", fontType);
+            doc.text(text, 40, y, { align: "center", maxWidth: 74 });
+          };
+
+          // Shop Name (Optional, maybe skip to save space or keep small)
+          // centerText("Alternativa Keto", currentY, 12, "bold");
+          // currentY += 5;
+
+          // Product Name (Uppercase and Bold)
+          doc.setFontSize(16);
           doc.setFont("helvetica", "bold");
-          doc.text("Alternativa Keto", 40, headerY, { align: "center" });
+          const splitTitle = doc.splitTextToSize(selectedRecipe.name.toUpperCase(), 70);
+          doc.text(splitTitle, 40, currentY, { align: "center" });
+          currentY += (splitTitle.length * 6) + 2;
+
+          // Divider Line (Bold)
+          doc.setLineWidth(1);
+          doc.line(5, currentY, 75, currentY);
+          currentY += 5;
+
+          // PRICE (Re-added)
+          doc.setFontSize(24);
+          doc.setFont("helvetica", "bold");
+          doc.text(`$${suggestedPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`, 40, currentY + 5, { align: "center" });
+          currentY += 15;
+
+          // Divider Line (Bold)
+          doc.setLineWidth(1);
+          doc.line(5, currentY, 75, currentY);
+          currentY += 5;
+
+          // DATOS NUTRICIONALES Header
+          centerText("DATOS NUTRICIONALES", currentY, 11, "bold");
+          currentY += 2;
+
+          doc.setLineWidth(0.5);
+          doc.line(5, currentY + 2, 75, currentY + 2);
+          currentY += 7;
+
+          // Portion Info
+          const portionWeight = selectedRecipe.portionWeight || 0;
+          const portionText = portionWeight > 0
+            ? `PORCIÓN: ${portionWeight}G`
+            : `PORCIÓN: ${weight}G`; // Fallback if no portion weight set
+
+          centerText(portionText, currentY, 10, "bold");
+          currentY += 2;
+
+          doc.setLineWidth(0.5);
+          doc.line(5, currentY + 2, 75, currentY + 2);
+          currentY += 6;
+
+          // Nutrients Table Headers
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "bold");
+          doc.text("NUTRIENTE", 5, currentY);
+          doc.text("CANT.", 75, currentY, { align: "right" });
+          currentY += 2;
+
+          doc.setLineWidth(0.5);
+          doc.line(5, currentY, 75, currentY);
+          currentY += 5;
+
+          // Nutrients Data Calculation
+          // If portionWeight is defined and totalYieldWeight > 0, we calculate per portion.
+          // Otherwise fall back to displaying raw values (though user is instructed to input totals now).
+
+          let factor = 0;
+          if (portionWeight > 0 && selectedRecipe.totalYieldWeight > 0) {
+            factor = portionWeight / selectedRecipe.totalYieldWeight;
+          }
+
+          const calcValue = (val: number | undefined) => {
+            if (!val) return "0";
+            if (factor > 0) {
+              return Math.round(val * factor).toString();
+            }
+            // Fallback if no yield/portion set: return value as is (maybe user entered per portion?)
+            // But we shifted to Total input, so this might specific case.
+            // Let's assume valid data for now or return 0 if invalid.
+            return "0";
+          };
+
+          const nutrients = [
+            { label: "ENERGÍA", value: `${calcValue(selectedRecipe.nutritionalInfo?.calories)} KCAL` },
+            { label: "GRASAS", value: `${calcValue(selectedRecipe.nutritionalInfo?.fat)}G` },
+            { label: "CARBOS", value: `${calcValue(selectedRecipe.nutritionalInfo?.carbs)}G` },
+            { label: "PROTEÍNA", value: `${calcValue(selectedRecipe.nutritionalInfo?.protein)}G` },
+            { label: "FIBRA", value: `${calcValue(selectedRecipe.nutritionalInfo?.fiber)}G` },
+          ];
+
+          nutrients.forEach(nut => {
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            doc.text(nut.label, 5, currentY);
+            doc.text(nut.value, 75, currentY, { align: "right" });
+            currentY += 5;
+          });
+
+          // Divider after nutrients
+          doc.setLineWidth(1);
+          doc.line(5, currentY, 75, currentY);
+          currentY += 5;
+
+          // CONSERVACIÓN Section
+          if (selectedRecipe.conservation) {
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            doc.text("CONSERVACIÓN:", 5, currentY);
+            currentY += 4;
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "italic"); // Italic for conservation text details
+            const conservationLines = doc.splitTextToSize(selectedRecipe.conservation.toUpperCase(), 70);
+            doc.text(conservationLines, 5, currentY);
+            currentY += (conservationLines.length * 4) + 2;
+          }
+
+          // BOX: MANTENGA EN LUGAR FRESCO
+          doc.setLineWidth(0.5);
+          doc.rect(5, currentY, 70, 8);
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.text("MANTENGA EN LUGAR FRESCO", 40, currentY + 5.5, { align: "center" });
+          currentY += 12;
 
           // Divider
+          doc.setLineWidth(1);
+          doc.line(5, currentY, 75, currentY);
+          currentY += 5;
+
+          // Dates
+          const today = new Date();
+          const elabDate = today.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+          // Logic for expiration date: default 7 days if not parsed from conservation text
+          // Simple default: +7 days
+          const expirationDate = new Date();
+          expirationDate.setDate(today.getDate() + 7);
+          const venceDate = expirationDate.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.text(`ELAB: ${elabDate}`, 5, currentY);
+          currentY += 5;
+          doc.text(`VENCE: ${venceDate}`, 5, currentY);
+          currentY += 7;
+
+          // NET WEIGHT BOX
+          doc.setLineWidth(1); // Thicker border
+          doc.rect(5, currentY, 70, 10);
           doc.setFontSize(12);
-          doc.text("----------------------------------------", 40, headerY + 5, { align: "center" });
-
-          // Product Details
-          doc.setFontSize(20);
           doc.setFont("helvetica", "bold");
-          doc.text(selectedRecipe.name, 40, headerY + 15, { align: "center", maxWidth: 75 });
+          doc.text(`NETO: ${weight}G`, 40, currentY + 7, { align: "center" });
+          currentY += 15;
 
-          doc.setFontSize(16);
-          doc.setFont("helvetica", "normal");
-          doc.text(`${weight} g`, 40, headerY + 25, { align: "center" });
-
-          // Price
-          doc.setFontSize(32);
+          // SIN AZUCAR BOX
+          doc.setLineWidth(1);
+          doc.rect(20, currentY, 40, 10);
+          doc.setFontSize(11);
           doc.setFont("helvetica", "bold");
-          doc.text(`$${suggestedPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`, 40, headerY + 40, { align: "center" });
+          doc.text("SIN AZÚCAR", 40, currentY + 7, { align: "center" });
+          currentY += 15;
 
-          // Footer
-          doc.setFontSize(14);
-          doc.setFont("helvetica", "italic");
-          doc.text("¡Gracias por su compra!", 40, headerY + 55, { align: "center" });
 
+          // Footer / Social
           // Instagram Icon & Handle
-          const startX = 16;
-          const iconY = headerY + 60;
-          const iconSize = 9;
+          const startX = 18; // Centering roughly
+          // const iconY = currentY;
 
-          // Icon Background
-          doc.setDrawColor(0);
-          doc.setLineWidth(0.4);
-          doc.roundedRect(startX, iconY, iconSize, iconSize, 2, 2, 'S');
+          // Re-using social icon code but adjusting position
+          // ... (Simpler social text for this layout)
 
-          // Inner Circle
-          doc.circle(startX + (iconSize / 2), iconY + (iconSize / 2), iconSize * 0.25, 'S');
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bolditalic");
+          doc.text("¡MUCHAS GRACIAS!", 40, currentY, { align: "center" });
 
-          // Dot
-          doc.circle(startX + (iconSize * 0.75), iconY + (iconSize * 0.22), 0.4, 'F');
+          // Instagram text below
+          currentY += 5;
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "normal");
+          doc.text("@alternativaketo", 40, currentY, { align: "center" });
 
-          // Text
-          doc.setFontSize(14);
-          doc.setFont("helvetica", "bold");
-          // Adjust text position relative to icon
-          doc.text("@alternativaketo", startX + iconSize + 3, iconY + 6, { align: "left" });
+
 
           // Ensure simple filename and open in new tab
           const cleanName = selectedRecipe.name.replace(/[^a-zA-Z0-9]/g, '_');

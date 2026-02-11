@@ -9,11 +9,12 @@ interface SidebarProps {
     setActiveTab: (tab: string) => void;
     onOpenCalculator: () => void;
     onOpenOrders: () => void;
+    onOpenStock: () => void;
     user: User | null;
     onLogout: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, activeTab, setActiveTab, onOpenCalculator, onOpenOrders, user, onLogout }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, activeTab, setActiveTab, onOpenCalculator, onOpenOrders, onOpenStock, user, onLogout }) => {
     return (
         <>
             {/* Mobile Overlay */}
@@ -107,6 +108,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, activeTab, set
                             </div>
                             <span className={`text-xs text-brand-brown/70`}>
                                 Clientes • Nuevo Pedido
+                            </span>
+                        </button>
+
+                        <button
+                            onClick={() => { onOpenStock(); if (window.innerWidth < 768) toggleSidebar(); }}
+                            className={`w-full text-left p-4 rounded-xl transition-all duration-200 flex flex-col items-start gap-1 border
+                ${false
+                                    ? 'bg-brand-brown text-white border-brand-brown shadow-md'
+                                    : 'bg-brand-brown/10 text-brand-brown border-brand-brown/20 hover:bg-brand-brown/20'
+                                }`}
+                        >
+                            <div className="flex items-center gap-2 font-bold">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                </svg>
+                                CONTROL DE STOCK
+                            </div>
+                            <span className={`text-xs text-brand-brown/70`}>
+                                Inventario • Insumos
                             </span>
                         </button>
                     </nav>

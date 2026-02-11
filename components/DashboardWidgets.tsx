@@ -22,8 +22,7 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({ orders, onEdit, onVi
     // Filter for delivered orders
     const deliveredOrders = orders
         .filter(o => o.status === 'completed')
-        .sort((a, b) => new Date(b.deliveryDate).getTime() - new Date(a.deliveryDate).getTime()) // Most recent first
-        .slice(0, 10); // Show last 10 delivered
+        .sort((a, b) => new Date(b.deliveryDate).getTime() - new Date(a.deliveryDate).getTime()); // Most recent first
 
     const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
@@ -120,7 +119,7 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({ orders, onEdit, onVi
                     <h3 className="text-lg font-serif font-bold text-stone-500 mb-4 flex items-center gap-2">
                         <span className="text-xl">📦</span> Entregados Recientemente
                     </h3>
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
                         {deliveredOrders.map((order) => (
                             <div
                                 key={order.id}
@@ -173,6 +172,7 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({ orders, onEdit, onVi
         </div>
     );
 };
+
 interface StatCardProps {
     title: string;
     value: string | number;
@@ -189,7 +189,7 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, subtext, isAle
             <div className={`text-2xl font-bold ${isAlert ? 'text-red-500' : 'text-brand-brown'}`}>
                 {value}
             </div>
-            {subtext && <div className="text-xs text-stone-500 mt-1">{subtext}</div>}
+            {subtext && <div className="text-base font-bold text-brand-accent mt-2">{subtext}</div>}
         </div>
     </div>
 );
@@ -200,9 +200,10 @@ interface CalendarWidgetProps {
     orders: Order[];
     onNewOrder?: (date: Date) => void;
     onViewOrder?: (order: Order) => void;
+    onEditOrder?: (order: Order) => void;
 }
 
-export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ orders, onNewOrder, onViewOrder }) => {
+export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ orders, onNewOrder, onViewOrder, onEditOrder }) => {
     const today = new Date();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDateDetails, setSelectedDateDetails] = useState<{ date: Date, orders: Order[] } | null>(null);
@@ -254,17 +255,28 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ orders, onNewOrd
                             <div className="space-y-2 max-h-40 overflow-y-auto">
                                 <p className="text-xs font-bold text-brand-brown/60 uppercase">Pedidos:</p>
                                 {selectedDateDetails.orders.map(order => (
-                                    <button
-                                        key={order.id}
-                                        onClick={() => {
-                                            onViewOrder && onViewOrder(order);
-                                            setSelectedDateDetails(null);
-                                        }}
-                                        className="w-full text-left p-2 rounded bg-brand-cream hover:bg-brand-brown/10 text-sm text-brand-brown transition-colors flex items-center justify-between group"
-                                    >
-                                        <span className="font-medium truncate">{order.clientName}</span>
-                                        <span className="text-xs opacity-0 group-hover:opacity-100 text-brand-accent">Ver →</span>
-                                    </button>
+                                    <div key={order.id} className="flex gap-2 items-center">
+                                        <button
+                                            onClick={() => {
+                                                onViewOrder && onViewOrder(order);
+                                                setSelectedDateDetails(null);
+                                            }}
+                                            className="flex-1 text-left p-2 rounded bg-brand-cream hover:bg-brand-brown/10 text-sm text-brand-brown transition-colors flex items-center justify-between group"
+                                        >
+                                            <span className="font-medium truncate">{order.clientName}</span>
+                                            <span className="text-xs opacity-0 group-hover:opacity-100 text-brand-accent">Ver →</span>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                onEditOrder && onEditOrder(order);
+                                                setSelectedDateDetails(null);
+                                            }}
+                                            className="p-2 rounded bg-brand-cream hover:bg-brand-brown/10 text-brand-brown transition-colors"
+                                            title="Editar Pedido"
+                                        >
+                                            ✏️
+                                        </button>
+                                    </div>
                                 ))}
                             </div>
                         ) : (
@@ -322,12 +334,12 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ orders, onNewOrd
                             onClick={() => handleDateClick(date)}
                             className={`
                                 aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer transition-all relative
-                                ${isToday ? 'bg-brand-accent/20 border border-brand-accent' : 'hover:bg-white hover:shadow-md'}
+                                ${isToday ? 'today-neon-glow' : 'hover:bg-white hover:shadow-md'}
                                 ${hasDelivery ? 'bg-white font-bold border border-stone-100' : ''}
                             `}
                             title={hasDelivery ? `${dayOrders.length} entregas` : 'Crear Pedido'}
                         >
-                            <span className={`text-sm ${hasDelivery ? 'font-bold text-brand-brown' : 'text-stone-500'}`}>{date}</span>
+                            <span className={`text-sm ${hasDelivery || isToday ? 'font-bold text-brand-brown' : 'text-stone-500'}`}>{date}</span>
                             {hasDelivery && (
                                 <span className="text-xl leading-none mt-1 animate-pulse">🍪</span>
                             )}

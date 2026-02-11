@@ -11,6 +11,7 @@ export interface Ingredient {
   name: string;
   unit: Unit;
   quantity?: number;
+  currentStock?: number; // Actual stock on hand
   pricePerUnit: number;
 }
 
@@ -18,6 +19,14 @@ export interface RecipeIngredient {
   ingredientId: string;
   quantityUsed: number; // In grams if KG/LT, or units if UN
   calculatedCost: number;
+}
+
+export interface NutritionalInfo {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
 }
 
 export interface Recipe {
@@ -28,6 +37,9 @@ export interface Recipe {
   totalYieldWeight: number; // Total weight of the result (e.g. 1500g cake)
   totalCost: number;
   costPerGram: number; // Or cost per unit if yield is 1
+  nutritionalInfo?: NutritionalInfo; // VALORES TOTALES DE LA RECETA
+  portionWeight?: number; // Peso de una porción en gramos
+  conservation?: string; // e.g. "Heladera: 7 días"
 }
 
 // Helper to convert units for display/calculation
@@ -74,4 +86,14 @@ export interface Order {
   total: number;
   deposit: number; // Seña
   createdAt: Date;
+}
+
+// Production History Log
+export interface ProductionLog {
+  id: string;
+  userId: string;
+  recipeId: string;
+  recipeName: string;
+  quantityProduced: number; // in grams
+  date: any; // Firestore Timestamp
 }

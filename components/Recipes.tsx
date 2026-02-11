@@ -21,6 +21,15 @@ const Recipes: React.FC<Props> = ({ userId }) => {
   const [recipeName, setRecipeName] = useState('');
   const [ingredientsList, setIngredientsList] = useState<LocalRecipeIngredient[]>([]);
   const [totalYield, setTotalYield] = useState('');
+  // Nutritional Info State
+  const [calories, setCalories] = useState('');
+  const [protein, setProtein] = useState('');
+  const [carbs, setCarbs] = useState('');
+  const [fat, setFat] = useState('');
+  const [fiber, setFiber] = useState('');
+  const [portionWeight, setPortionWeight] = useState(''); // New state for portion weight
+  const [conservation, setConservation] = useState('');
+
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Feedback States
@@ -110,13 +119,22 @@ const Recipes: React.FC<Props> = ({ userId }) => {
       };
     });
 
-    const recipeData = {
+    const recipeData: Omit<Recipe, 'id'> = {
       userId,
       name: recipeName,
       ingredients: finalIngredients,
       totalYieldWeight: yieldWeight,
       totalCost,
-      costPerGram
+      costPerGram,
+      nutritionalInfo: {
+        calories: parseFloat(calories) || 0,
+        protein: parseFloat(protein) || 0,
+        carbs: parseFloat(carbs) || 0,
+        fat: parseFloat(fat) || 0,
+        fiber: parseFloat(fiber) || 0,
+      },
+      portionWeight: parseFloat(portionWeight) || 0,
+      conservation
     };
 
     try {
@@ -149,6 +167,15 @@ const Recipes: React.FC<Props> = ({ userId }) => {
       quantityUsed: i.quantityUsed.toString()
     }));
     setIngredientsList(localIngredients);
+
+    // Set nutritional info
+    setCalories(recipe.nutritionalInfo?.calories.toString() || '');
+    setProtein(recipe.nutritionalInfo?.protein.toString() || '');
+    setCarbs(recipe.nutritionalInfo?.carbs.toString() || '');
+    setFat(recipe.nutritionalInfo?.fat.toString() || '');
+    setFiber(recipe.nutritionalInfo?.fiber.toString() || '');
+    setPortionWeight(recipe.portionWeight?.toString() || '');
+    setConservation(recipe.conservation || '');
 
     setEditingId(recipe.id);
 
@@ -183,6 +210,13 @@ const Recipes: React.FC<Props> = ({ userId }) => {
     setRecipeName('');
     setIngredientsList([]);
     setTotalYield('');
+    setCalories('');
+    setProtein('');
+    setCarbs('');
+    setFat('');
+    setFiber('');
+    setPortionWeight('');
+    setConservation('');
     setEditingId(null);
     setErrorMsg('');
   };
@@ -305,6 +339,89 @@ const Recipes: React.FC<Props> = ({ userId }) => {
             </div>
           </div>
 
+          {/* Nutritional Info Section */}
+          <div className="bg-brand-brown/5 p-4 rounded-xl border border-brand-brown/10">
+            <h3 className="text-md font-bold text-brand-brown mb-3 font-serif border-b border-brand-brown/10 pb-2">
+              Información Nutricional (TOTAL DE LA RECETA)
+            </h3>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block text-xs font-bold text-brand-brown mb-1">Calorías Totales (Kcal)</label>
+                <input
+                  type="number"
+                  value={calories}
+                  onChange={(e) => setCalories(e.target.value)}
+                  className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-brand-brown mb-1">Grasas Totales (g)</label>
+                <input
+                  type="number"
+                  value={fat}
+                  onChange={(e) => setFat(e.target.value)}
+                  className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-brand-brown mb-1">Carbos Totales (g)</label>
+                <input
+                  type="number"
+                  value={carbs}
+                  onChange={(e) => setCarbs(e.target.value)}
+                  className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-brand-brown mb-1">Proteínas Totales (g)</label>
+                <input
+                  type="number"
+                  value={protein}
+                  onChange={(e) => setProtein(e.target.value)}
+                  className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-brand-brown mb-1">Fibra Total (g)</label>
+                <input
+                  type="number"
+                  value={fiber}
+                  onChange={(e) => setFiber(e.target.value)}
+                  className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-brand-brown mb-1">Peso de 1 Porción (g)</label>
+                <input
+                  type="number"
+                  value={portionWeight}
+                  onChange={(e) => setPortionWeight(e.target.value)}
+                  className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
+                  placeholder="Ej. 60"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-brand-brown mb-1">Conservación</label>
+                <input
+                  type="text"
+                  value={conservation}
+                  onChange={(e) => setConservation(e.target.value)}
+                  className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
+                  placeholder="Ej. Heladera: 7 días"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="flex gap-2">
             <button
               type="submit"
@@ -323,78 +440,80 @@ const Recipes: React.FC<Props> = ({ userId }) => {
             )}
           </div>
         </form>
-      </div>
+      </div >
 
       {/* LIST SECTION */}
-      <div className="space-y-4">
+      < div className="space-y-4" >
         <h3 className="text-lg font-bold text-brand-brown pl-2 border-l-4 border-brand-brown font-serif">
           Mis Recetas ({savedRecipes.length})
         </h3>
 
-        {savedRecipes.length === 0 ? (
-          <p className="text-center text-brand-brown/40 py-8 italic">No tienes recetas guardadas aún.</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {savedRecipes.map(recipe => (
-              <div key={recipe.id} className="bg-white p-5 rounded-2xl shadow-sm border border-brand-brown/10 flex flex-col justify-between hover:border-brand-brown/30 transition-all">
-                <div>
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-bold text-lg text-brand-brown leading-tight font-serif">{recipe.name}</h4>
-                    <span className="bg-brand-brown/10 text-brand-brown text-xs font-bold px-2 py-1 rounded-lg">
-                      {recipe.ingredients.length} Ingred.
-                    </span>
-                  </div>
+        {
+          savedRecipes.length === 0 ? (
+            <p className="text-center text-brand-brown/40 py-8 italic">No tienes recetas guardadas aún.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {savedRecipes.map(recipe => (
+                <div key={recipe.id} className="bg-white p-5 rounded-2xl shadow-sm border border-brand-brown/10 flex flex-col justify-between hover:border-brand-brown/30 transition-all">
+                  <div>
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-bold text-lg text-brand-brown leading-tight font-serif">{recipe.name}</h4>
+                      <span className="bg-brand-brown/10 text-brand-brown text-xs font-bold px-2 py-1 rounded-lg">
+                        {recipe.ingredients.length} Ingred.
+                      </span>
+                    </div>
 
-                  <div className="space-y-1 text-sm text-brand-brown/70 mb-4">
-                    <p className="flex justify-between">
-                      <span>Rendimiento (Yield):</span>
-                      <span className="font-medium text-brand-brown">{recipe.totalYieldWeight} gr/un</span>
-                    </p>
-                    <p className="flex justify-between">
-                      <span>Costo Total:</span>
-                      <span className="font-medium text-brand-brown">${recipe.totalCost.toFixed(2)}</span>
-                    </p>
-                    <div className="pt-2 mt-2 border-t border-brand-brown/10 flex justify-between text-brand-brown font-bold">
-                      <span>Costo Base:</span>
-                      <span>${recipe.costPerGram.toFixed(4)} / gr</span>
+                    <div className="space-y-1 text-sm text-brand-brown/70 mb-4">
+                      <p className="flex justify-between">
+                        <span>Rendimiento (Yield):</span>
+                        <span className="font-medium text-brand-brown">{recipe.totalYieldWeight} gr/un</span>
+                      </p>
+                      <p className="flex justify-between">
+                        <span>Costo Total:</span>
+                        <span className="font-medium text-brand-brown">${recipe.totalCost.toFixed(2)}</span>
+                      </p>
+                      <div className="pt-2 mt-2 border-t border-brand-brown/10 flex justify-between text-brand-brown font-bold">
+                        <span>Costo Base:</span>
+                        <span>${recipe.costPerGram.toFixed(4)} / gr</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex gap-2 mt-2 pt-3 border-t border-brand-brown/5">
-                  <button
-                    type="button"
-                    onClick={() => handleEdit(recipe)}
-                    className="flex-1 py-2 text-sm font-semibold text-brand-brown bg-brand-brown/5 rounded-lg hover:bg-brand-brown/10 transition flex justify-center items-center gap-2"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => handleDelete(e, recipe.id)}
-                    className="flex-1 py-2 text-sm font-semibold text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition flex justify-center items-center gap-2"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Eliminar
-                  </button>
+                  <div className="flex gap-2 mt-2 pt-3 border-t border-brand-brown/5">
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(recipe)}
+                      className="flex-1 py-2 text-sm font-semibold text-brand-brown bg-brand-brown/5 rounded-lg hover:bg-brand-brown/10 transition flex justify-center items-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDelete(e, recipe.id)}
+                      className="flex-1 py-2 text-sm font-semibold text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition flex justify-center items-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )
+        }
+      </div >
 
       {successMsg && (
         <div className="fixed bottom-20 md:bottom-10 left-4 right-4 bg-brand-brown text-white p-4 rounded-xl text-center shadow-lg animate-bounce z-50 font-serif">
           {successMsg}
         </div>
       )}
-    </div>
+    </div >
   );
 };
 

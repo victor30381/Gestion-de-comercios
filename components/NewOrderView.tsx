@@ -392,13 +392,18 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                 dateObj = new Date(y, m - 1, d); // Local midnight
             }
 
+            // Determine status: if date is in the past, it's completed
+            const normalizedToday = new Date();
+            normalizedToday.setHours(0, 0, 0, 0);
+            const isPastDate = dateObj < normalizedToday;
+
             const orderData: Omit<Order, 'id'> = {
                 userId,
                 clientId: selectedClientId,
                 clientName: client?.name || 'Cliente Desconocido',
                 items: items,
                 deliveryDate: dateObj,
-                status: 'pending',
+                status: isPastDate ? 'completed' : 'pending',
                 total,
                 deposit,
                 createdAt: new Date()
