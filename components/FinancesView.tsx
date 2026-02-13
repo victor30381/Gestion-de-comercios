@@ -20,6 +20,7 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [loading, setLoading] = useState(true);
+    const [timeframe, setTimeframe] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
     useEffect(() => {
         if (!userId) return;
@@ -60,15 +61,35 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
         }, 0);
     };
 
-    // Group data by day
-    const dailyDataMap = orders.reduce((acc, order) => {
-        const dateKey = order.deliveryDate.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+    const getStartOfWeek = (date: Date) => {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when Sunday
+        return new Date(d.setDate(diff));
+    };
+
+    // Group data by selected timeframe
+    const aggregatedDataMap = orders.reduce((acc, order) => {
+        let dateKey = "";
+        let rawDate = order.deliveryDate;
+
+        if (timeframe === 'daily') {
+            dateKey = order.deliveryDate.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+        } else if (timeframe === 'weekly') {
+            const startOfWeek = getStartOfWeek(order.deliveryDate);
+            dateKey = `Sem. ${startOfWeek.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}`;
+            rawDate = startOfWeek;
+        } else if (timeframe === 'monthly') {
+            dateKey = order.deliveryDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+            rawDate = new Date(order.deliveryDate.getFullYear(), order.deliveryDate.getMonth(), 1);
+        }
+
         const gross = order.total || 0;
         const cost = calculateOrderCost(order);
         const profit = gross - cost;
 
         if (!acc[dateKey]) {
-            acc[dateKey] = { date: dateKey, ingresos: 0, costos: 0, ganancias: 0, rawDate: order.deliveryDate };
+            acc[dateKey] = { date: dateKey, ingresos: 0, costos: 0, ganancias: 0, rawDate };
         }
         acc[dateKey].ingresos += gross;
         acc[dateKey].costos += Math.round(cost);
@@ -76,7 +97,7 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
         return acc;
     }, {} as Record<string, DailyStat>);
 
-    const sortedData: DailyStat[] = (Object.values(dailyDataMap) as DailyStat[]).sort((a, b) => a.rawDate.getTime() - b.rawDate.getTime());
+    const sortedData: DailyStat[] = (Object.values(aggregatedDataMap) as DailyStat[]).sort((a, b) => a.rawDate.getTime() - b.rawDate.getTime());
 
     // Totals
     const totalGross = orders.reduce((sum, o) => sum + (o.total || 0), 0);
@@ -89,9 +110,27 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
 
     return (
         <div className="flex flex-col gap-8 pb-10">
-            <header>
-                <h2 className="text-3xl font-serif font-bold text-brand-brown mb-2 tracking-tight">Finanzas de la Empresa</h2>
-                <p className="text-stone-500 font-medium">Análisis detallado de ingresos, costos y rentabilidad.</p>
+            <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <h2 className="text-3xl font-serif font-bold text-brand-brown mb-2 tracking-tight">Finanzas de la Empresa</h2>
+                    <p className="text-stone-500 font-medium">Análisis detallado de ingresos, costos y rentabilidad.</p>
+                </div>
+
+                {/* Timeframe Selector */}
+                <div className="flex bg-brand-cream border border-[#E5DCD3] p-1 rounded-xl shadow-sm self-start md:self-auto">
+                    {(['daily', 'weekly', 'monthly'] as const).map((t) => (
+                        <button
+                            key={t}
+                            onClick={() => setTimeframe(t)}
+                            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all uppercase tracking-wider
+                                ${timeframe === t
+                                    ? 'bg-brand-brown text-white shadow-md'
+                                    : 'text-brand-brown/60 hover:text-brand-brown hover:bg-white/50'}`}
+                        >
+                            {t === 'daily' ? 'Día' : t === 'weekly' ? 'Semana' : 'Mes'}
+                        </button>
+                    ))}
+                </div>
             </header>
 
             {/* Global Stats */}
@@ -101,42 +140,53 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
                 <StatCard title="Ganancia Neta" value={`$${totalProfit.toLocaleString()}`} subtext="Rentabilidad total" />
             </div>
 
-            {/* Visualización Simple (Provisional para estabilidad) */}
+            {/* Visualización Simple */}
             <div className="bg-brand-cream rounded-2xl shadow-sm border border-[#E5DCD3] p-6 lg:p-8">
-                <h3 className="text-xl font-serif font-bold text-brand-brown mb-6">
-                    <span className="text-2xl">📊</span> Resumen de Ingresos por Día
+                <h3 className="text-xl font-serif font-bold text-brand-brown mb-6 flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                        <span className="text-2xl">📊</span>
+                        Resumen de Ingresos
+                    </span>
+                    <span className="text-[10px] uppercase tracking-widest text-[#D4A373] bg-[#D4A373]/10 px-3 py-1 rounded-full border border-[#D4A373]/20">
+                        {timeframe === 'daily' ? 'Vista Diaria' : timeframe === 'weekly' ? 'Vista Semanal' : 'Vista Mensual'}
+                    </span>
                 </h3>
                 <div className="space-y-4">
-                    {sortedData.slice(-7).map(day => (
+                    {sortedData.slice(timeframe === 'daily' ? -10 : timeframe === 'weekly' ? -8 : -12).map(day => (
                         <div key={day.date} className="flex flex-col gap-1">
                             <div className="flex justify-between text-xs font-bold text-brand-brown">
-                                <span>{day.date}</span>
+                                <span className="capitalize">{day.date}</span>
                                 <span>${day.ingresos.toLocaleString()}</span>
                             </div>
                             <div className="w-full bg-white rounded-full h-3 border border-stone-100 overflow-hidden">
                                 <div
-                                    className="bg-brand-accent h-full transition-all duration-500"
+                                    className="bg-brand-accent h-full transition-all duration-700 ease-out"
                                     style={{ width: `${(day.ingresos / maxVal) * 100}%` }}
                                 ></div>
                             </div>
                         </div>
                     ))}
-                    <p className="text-[10px] text-stone-400 italic text-center mt-4">Mostrando últimos 7 días con actividad</p>
+                    <p className="text-[10px] text-stone-400 italic text-center mt-4 uppercase tracking-tighter">
+                        Mostrando histórico por {timeframe === 'daily' ? 'día' : timeframe === 'weekly' ? 'semana' : 'mes'}
+                    </p>
                 </div>
             </div>
 
-            {/* Daily Breakdown Table */}
+            {/* Detailed Table */}
             <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
-                <div className="bg-brand-brown px-6 py-4">
+                <div className="bg-brand-brown px-6 py-4 flex justify-between items-center">
                     <h3 className="text-lg font-serif font-bold text-white flex items-center gap-2">
-                        <span>🗓️</span> Detalle Diario Generado
+                        <span>🗓️</span> Desglose {timeframe === 'daily' ? 'Diario' : timeframe === 'weekly' ? 'Semanal' : 'Mensual'}
                     </h3>
+                    <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest">
+                        {sortedData.length} registros
+                    </span>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-brand-cream border-b border-stone-100 uppercase text-[10px] font-bold tracking-widest text-brand-brown/60">
-                                <th className="px-6 py-4">Fecha</th>
+                                <th className="px-6 py-4">Periodo</th>
                                 <th className="px-6 py-4">Ingresos</th>
                                 <th className="px-6 py-4">Costos Reales</th>
                                 <th className="px-6 py-4 text-right">Ganancia</th>
@@ -145,7 +195,7 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
                         <tbody className="text-sm">
                             {sortedData.slice().reverse().map((day: DailyStat) => (
                                 <tr key={day.date} className="border-b border-stone-50 hover:bg-brand-cream/30 transition-colors">
-                                    <td className="px-6 py-4 font-bold text-brand-brown">{day.date}</td>
+                                    <td className="px-6 py-4 font-bold text-brand-brown capitalize">{day.date}</td>
                                     <td className="px-6 py-4 text-stone-600">${day.ingresos.toLocaleString()}</td>
                                     <td className="px-6 py-4 text-red-400 font-medium">-${day.costos.toLocaleString()}</td>
                                     <td className="px-6 py-4 text-right font-bold text-brand-accent">
