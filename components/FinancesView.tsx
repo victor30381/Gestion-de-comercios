@@ -122,7 +122,7 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
                         <button
                             key={t}
                             onClick={() => setTimeframe(t)}
-                            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all uppercase tracking-wider
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all uppercase tracking-wider
                                 ${timeframe === t
                                     ? 'bg-brand-brown text-white shadow-md'
                                     : 'text-brand-brown/60 hover:text-brand-brown hover:bg-white/50'}`}
@@ -147,14 +147,14 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
                         <span className="text-2xl">📊</span>
                         Resumen de Ingresos
                     </span>
-                    <span className="text-[10px] uppercase tracking-widest text-[#D4A373] bg-[#D4A373]/10 px-3 py-1 rounded-full border border-[#D4A373]/20">
+                    <span className="text-xs uppercase tracking-widest text-[#D4A373] bg-[#D4A373]/10 px-3 py-1 rounded-full border border-[#D4A373]/20">
                         {timeframe === 'daily' ? 'Vista Diaria' : timeframe === 'weekly' ? 'Vista Semanal' : 'Vista Mensual'}
                     </span>
                 </h3>
                 <div className="space-y-4">
                     {sortedData.slice(timeframe === 'daily' ? -10 : timeframe === 'weekly' ? -8 : -12).map(day => (
                         <div key={day.date} className="flex flex-col gap-1">
-                            <div className="flex justify-between text-xs font-bold text-brand-brown">
+                            <div className="flex justify-between text-sm font-bold text-brand-brown">
                                 <span className="capitalize">{day.date}</span>
                                 <span>${day.ingresos.toLocaleString()}</span>
                             </div>
@@ -166,7 +166,7 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
                             </div>
                         </div>
                     ))}
-                    <p className="text-[10px] text-stone-400 italic text-center mt-4 uppercase tracking-tighter">
+                    <p className="text-xs text-stone-400 italic text-center mt-4 uppercase tracking-tighter">
                         Mostrando histórico por {timeframe === 'daily' ? 'día' : timeframe === 'weekly' ? 'semana' : 'mes'}
                     </p>
                 </div>
@@ -178,21 +178,21 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
                     <h3 className="text-lg font-serif font-bold text-white flex items-center gap-2">
                         <span>🗓️</span> Desglose {timeframe === 'daily' ? 'Diario' : timeframe === 'weekly' ? 'Semanal' : 'Mensual'}
                     </h3>
-                    <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest">
+                    <span className="text-white/60 text-xs font-bold uppercase tracking-widest">
                         {sortedData.length} registros
                     </span>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-brand-cream border-b border-stone-100 uppercase text-[10px] font-bold tracking-widest text-brand-brown/60">
+                            <tr className="bg-brand-cream border-b border-stone-100 uppercase text-xs font-bold tracking-widest text-brand-brown/60">
                                 <th className="px-6 py-4">Periodo</th>
                                 <th className="px-6 py-4">Ingresos</th>
                                 <th className="px-6 py-4">Costos Reales</th>
                                 <th className="px-6 py-4 text-right">Ganancia</th>
                             </tr>
                         </thead>
-                        <tbody className="text-sm">
+                        <tbody className="text-base font-medium">
                             {sortedData.slice().reverse().map((day: DailyStat) => (
                                 <tr key={day.date} className="border-b border-stone-50 hover:bg-brand-cream/30 transition-colors">
                                     <td className="px-6 py-4 font-bold text-brand-brown capitalize">{day.date}</td>
