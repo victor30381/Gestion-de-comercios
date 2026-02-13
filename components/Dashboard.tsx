@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
-import { StatCard, CalendarWidget, DeliveryList } from './DashboardWidgets';
+import { StatCard, CalendarWidget, DeliveryList, ProductionSummary } from './DashboardWidgets';
 import { Order, Recipe } from '../types';
 
 interface DashboardProps {
@@ -120,6 +120,9 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, onEditOrder, onViewOrder,
                 <CalendarWidget orders={orders} onNewOrder={onNewOrderWithDate} onViewOrder={onViewOrder} onEditOrder={onEditOrder} />
                 <DeliveryList orders={orders} onEdit={onEditOrder} onView={onViewOrder} />
             </div>
+
+            {/* Production Summary Row */}
+            <ProductionSummary orders={todayOrdersList} />
         </div>
     );
 };

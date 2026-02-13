@@ -3,6 +3,7 @@ import { auth } from './firebase';
 import { onAuthStateChanged, User, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
+import FinancesView from './components/FinancesView';
 import CalculatorModal from './components/CalculatorModal';
 import OrdersModal from './components/OrdersModal';
 import StockModal from './components/StockModal';
@@ -148,6 +149,7 @@ function App() {
         onOpenStock={toggleStockModal}
       >
         {activeTab === 'dashboard' && <Dashboard userId={user?.uid || ''} onEditOrder={handleEditOrder} onViewOrder={handleViewOrder} onNewOrderWithDate={handleNewOrderWithDate} />}
+        {activeTab === 'finances' && <FinancesView userId={user?.uid || ''} />}
         {/* Helper logic to keep other tabs valid if needed, though mostly using modals now */}
       </Layout>
 

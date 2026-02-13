@@ -3,7 +3,7 @@ import { Order } from '../types';
 import { db } from '../firebase';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
-// ... (StatCard and CalendarWidget remain unchanged) ...
+
 
 // --- DELIVERY LIST ---
 interface DeliveryListProps {
@@ -352,3 +352,84 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ orders, onNewOrd
 };
 
 
+
+// --- PRODUCTION SUMMARY ---
+interface ProductionSummaryProps {
+    orders: Order[];
+}
+
+export const ProductionSummary: React.FC<ProductionSummaryProps> = ({ orders }) => {
+    const [expandedItem, setExpandedItem] = useState<string | null>(null);
+
+    // Group items and collect client details
+    const summary = orders.reduce((acc, order) => {
+        order.items.forEach(item => {
+            if (!acc[item.name]) {
+                acc[item.name] = { total: 0, clients: [] };
+            }
+            acc[item.name].total += item.quantity;
+            acc[item.name].clients.push({
+                name: order.clientName,
+                qty: item.quantity
+            });
+        });
+        return acc;
+    }, {} as Record<string, { total: number, clients: { name: string, qty: number }[] }>);
+
+    const items: [string, { total: number, clients: { name: string, qty: number }[] }][] = Object.entries(summary);
+
+    if (items.length === 0) return null;
+
+    return (
+        <div className="bg-brand-cream rounded-xl shadow-sm border border-[#E5DCD3] p-6 w-full relative">
+            <h3 className="text-xl font-serif font-bold text-brand-brown mb-4 flex items-center gap-2">
+                <span className="text-2xl">👩‍🍳</span> Resumen de Producción (Hoy)
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {items.map(([name, data]) => (
+                    <div key={name} className="relative group">
+                        <button
+                            onClick={() => setExpandedItem(expandedItem === name ? null : name)}
+                            className={`w-full bg-white p-4 rounded-xl border flex justify-between items-center shadow-sm hover:shadow-md transition-all active:scale-[0.98] ${expandedItem === name ? 'border-brand-accent ring-2 ring-brand-accent/20' : 'border-brand-brown/10'}`}
+                        >
+                            <span className="text-brand-brown font-bold text-sm leading-tight text-left">{name}</span>
+                            <span className="bg-brand-brown text-white px-3 py-1 rounded-full text-base font-bold shadow-sm whitespace-nowrap ml-2">
+                                {data.total}
+                            </span>
+                        </button>
+
+                        {/* Dropdown for client details (UPWARDS) */}
+                        {expandedItem === name && (
+                            <div className="absolute bottom-full left-0 right-0 z-50 mb-2 bg-white rounded-xl shadow-2xl border border-brand-accent/20 p-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                                <p className="text-[10px] font-bold text-stone-400 uppercase mb-2 tracking-wider">¿Para quién es?</p>
+                                <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                                    {data.clients.map((c, idx) => (
+                                        <div key={idx} className="flex justify-between items-center text-xs pb-1.5 border-b border-stone-50 last:border-0 last:pb-0">
+                                            <span className="text-brand-brown/80 font-medium">{c.name}</span>
+                                            <span className="font-bold text-brand-accent bg-brand-accent/5 px-2 py-0.5 rounded">x{c.qty}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setExpandedItem(null); }}
+                                    className="w-full mt-3 text-[10px] text-stone-400 hover:text-brand-brown font-bold"
+                                >
+                                    Cerrar detalle
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+
+            {/* Background click to close overlay */}
+            {expandedItem && (
+                <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setExpandedItem(null)}
+                ></div>
+            )}
+        </div>
+    );
+};
