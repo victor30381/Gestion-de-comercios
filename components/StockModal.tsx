@@ -21,6 +21,7 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
     const [selectedIngId, setSelectedIngId] = useState('');
     const [qtyBought, setQtyBought] = useState('');
     const [totalPrice, setTotalPrice] = useState('');
+    const [isDiscarding, setIsDiscarding] = useState(false);
 
     // New Ingredient States
     const [isAddingNew, setIsAddingNew] = useState(false);
@@ -96,6 +97,7 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
         setSelectedRecipeId('');
         setProductionQty('');
         setEditingLogId(null);
+        setIsDiscarding(false);
     };
 
     const handleAddNewIngredient = async () => {
@@ -154,7 +156,7 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
             const batch = writeBatch(db);
             const ingRef = doc(db, 'ingredients', ing.id);
             batch.update(ingRef, {
-                pricePerUnit: newPricePerPerUnit,
+                pricePerUnit: newPricePerUnit,
                 currentStock: newStock
             });
 
@@ -207,6 +209,35 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
     };
 
 
+
+    const handleDiscardStock = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setMsg(null);
+        setLoading(true);
+
+        try {
+            const ing = ingredients.find(i => i.id === selectedIngId);
+            if (!ing) throw new Error("Ingrediente no encontrado");
+
+            const qty = parseFloat(qtyBought);
+            if (isNaN(qty) || qty <= 0) throw new Error("Ingrese una cantidad válida");
+
+            const newStock = (ing.currentStock || 0) - qty;
+
+            await updateDoc(doc(db, 'ingredients', ing.id), {
+                currentStock: newStock
+            });
+
+            setMsg({ type: 'success', text: `Se reportó la pérdida de ${qty} ${ing.unit}. Stock actualizado.` });
+            setQtyBought('');
+
+        } catch (error: any) {
+            console.error(error);
+            setMsg({ type: 'error', text: error.message });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const renderMenu = () => (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8">
@@ -317,49 +348,102 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
                             )}
                         </div>
 
-                        <form onSubmit={handleUpdateStock} className={`space-y-6 transition-opacity duration-200 ${isAddingNew ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                        {/* Toggle Operation Mode */}
+                        {!isAddingNew && selectedIngId && (
+                            <div className="flex gap-2 mb-6 bg-brand-brown/5 p-1 rounded-xl">
+                                <button
+                                    onClick={() => setIsDiscarding(false)}
+                                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${!isDiscarding
+                                        ? 'bg-white text-brand-brown shadow-sm'
+                                        : 'text-brand-brown/60 hover:text-brand-brown'
+                                        }`}
+                                >
+                                    📥 Registrar Compra
+                                </button>
+                                <button
+                                    onClick={() => setIsDiscarding(true)}
+                                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${isDiscarding
+                                        ? 'bg-red-50 text-red-600 shadow-sm ring-1 ring-red-100'
+                                        : 'text-brand-brown/60 hover:text-red-500'
+                                        }`}
+                                >
+                                    🗑️ Reportar Pérdida
+                                </button>
+                            </div>
+                        )}
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-bold text-brand-brown mb-1">
-                                        Cantidad Comprada
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            value={qtyBought}
-                                            onChange={(e) => setQtyBought(e.target.value)}
-                                            className="w-full p-3 rounded-xl border border-brand-brown/20 bg-brand-beige/50 text-brand-brown focus:ring-2 focus:ring-brand-accent/50 outline-none"
-                                            placeholder="0"
-                                            required
-                                        />
-                                        <span className="absolute right-3 top-3 text-sm text-brand-brown/40 font-bold">
-                                            {selectedIng ? selectedIng.unit : '-'}
-                                        </span>
+                        <form onSubmit={isDiscarding ? handleDiscardStock : handleUpdateStock} className={`space-y-6 transition-opacity duration-200 ${isAddingNew ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+
+                            <div className="grid grid-cols-1 gap-4">
+                                {isDiscarding ? (
+                                    // Discard Form
+                                    <div>
+                                        <label className="block text-sm font-bold text-red-600 mb-1">
+                                            Cantidad Desechada / Perdida
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                step="any"
+                                                value={qtyBought}
+                                                onChange={(e) => setQtyBought(e.target.value)}
+                                                className="w-full p-3 rounded-xl border border-red-200 bg-red-50 text-red-700 focus:ring-2 focus:ring-red-200 outline-none"
+                                                placeholder="0"
+                                                required
+                                            />
+                                            <span className="absolute right-3 top-3 text-sm text-red-400 font-bold">
+                                                {selectedIng ? selectedIng.unit : '-'}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-red-500 mt-2">
+                                            ⚠ Esta acción descontará stock sin modificar el precio promedio.
+                                        </p>
                                     </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-brand-brown mb-1">
-                                        Precio Total Pagado
-                                    </label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-3 text-brand-brown/40 font-bold">$</span>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            value={totalPrice}
-                                            onChange={(e) => setTotalPrice(e.target.value)}
-                                            className="w-full p-3 pl-7 rounded-xl border border-brand-brown/20 bg-brand-beige/50 text-brand-brown focus:ring-2 focus:ring-brand-accent/50 outline-none"
-                                            placeholder="0.00"
-                                            required
-                                        />
+                                ) : (
+                                    // Purchase Form
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-bold text-brand-brown mb-1">
+                                                Cantidad Comprada
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    step="any"
+                                                    value={qtyBought}
+                                                    onChange={(e) => setQtyBought(e.target.value)}
+                                                    className="w-full p-3 rounded-xl border border-brand-brown/20 bg-brand-beige/50 text-brand-brown focus:ring-2 focus:ring-brand-accent/50 outline-none"
+                                                    placeholder="0"
+                                                    required
+                                                />
+                                                <span className="absolute right-3 top-3 text-sm text-brand-brown/40 font-bold">
+                                                    {selectedIng ? selectedIng.unit : '-'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-brand-brown mb-1">
+                                                Precio Total Pagado
+                                            </label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-3 text-brand-brown/40 font-bold">$</span>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={totalPrice}
+                                                    onChange={(e) => setTotalPrice(e.target.value)}
+                                                    className="w-full p-3 pl-7 rounded-xl border border-brand-brown/20 bg-brand-beige/50 text-brand-brown focus:ring-2 focus:ring-brand-accent/50 outline-none"
+                                                    placeholder="0.00"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
 
-                            {/* Preview Calculation */}
-                            {selectedIng && qtyBought && totalPrice && !isNaN(parseFloat(qtyBought)) && !isNaN(parseFloat(totalPrice)) && (
+                            {/* Preview Calculation (Only for Purchase) */}
+                            {!isDiscarding && selectedIng && qtyBought && totalPrice && !isNaN(parseFloat(qtyBought)) && !isNaN(parseFloat(totalPrice)) && (
                                 <div className="bg-brand-brown/5 p-4 rounded-xl border border-brand-brown/10 text-center">
                                     <p className="text-sm text-brand-brown/70 mb-1">Nuevo Precio por {selectedIng.unit}</p>
                                     <p className="text-2xl font-bold text-brand-brown">
@@ -380,14 +464,22 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full bg-brand-brown text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-[#4A2E21] disabled:opacity-50 transition-all font-serif"
+                                className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg disabled:opacity-50 transition-all font-serif ${isDiscarding
+                                    ? 'bg-red-500 text-white hover:bg-red-600'
+                                    : 'bg-brand-brown text-white hover:bg-[#4A2E21]'
+                                    }`}
                             >
-                                {loading ? 'Actualizando...' : 'Actualizar Stock y Precios'}
+                                {loading
+                                    ? 'Procesando...'
+                                    : (isDiscarding ? 'Confirmar Pérdida de Stock' : 'Actualizar Stock y Precios')
+                                }
                             </button>
 
-                            <p className="text-xs text-center text-brand-brown/50 px-4">
-                                Al actualizar, se recalcularán automáticamente los costos de todas las recetas que usen este ingrediente.
-                            </p>
+                            {!isDiscarding && (
+                                <p className="text-xs text-center text-brand-brown/50 px-4">
+                                    Al actualizar, se recalcularán automáticamente los costos de todas las recetas que usen este ingrediente.
+                                </p>
+                            )}
                         </form>
                     </div>
 
@@ -417,7 +509,7 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
                                                 ${ing.pricePerUnit.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
                                             </td>
                                             <td className="p-3 text-center font-bold text-brand-brown">
-                                                <span className={`${ing.currentStock ? 'today-neon-glow' : ''} px-2 py-1 rounded inline-block`}>
+                                                <span className={`${(ing.currentStock || 0) < 0 ? 'text-red-500 font-bold' : ((ing.currentStock || 0) > 0 ? 'today-neon-glow' : 'text-brand-brown/40')} px-2 py-1 rounded inline-block`}>
                                                     {(ing.currentStock || 0).toLocaleString('es-ES', { maximumFractionDigits: 2 })}
                                                 </span>
                                             </td>
@@ -459,17 +551,60 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
                 throw new Error("La receta no tiene un peso final definido para calcular proporciones.");
             }
 
-            const batch = writeBatch(db);
-
             // Calculate Ratio: Production / Yield
             const ratio = qty / recipe.totalYieldWeight;
-            let ingredientsUpdatedCount = 0;
 
-            // Iterate recipe ingredients to calculate net change
+            // 1. Pre-Check: Validate Stock Availability
+            const missingIngredients: string[] = [];
+
             for (const item of (recipe.ingredients || [])) {
                 const ingredient = ingredients.find(i => i.id === item.ingredientId);
                 if (ingredient) {
-                    let netChange = -(item.quantityUsed * ratio); // Default: consume new amount
+                    const factor = getConversionFactor(ingredient.unit);
+                    let requiredAmount = (item.quantityUsed / factor) * ratio;
+
+                    // If editing, we consider the amount we are "returning" to stock first
+                    if (editingLogId) {
+                        const oldLog = productionHistory.find(l => l.id === editingLogId);
+                        if (oldLog) {
+                            const oldRecipe = recipes.find(r => r.id === oldLog.recipeId);
+                            if (oldRecipe && oldRecipe.totalYieldWeight) {
+                                const recoveryRatio = oldLog.quantityProduced / oldRecipe.totalYieldWeight;
+                                const amountRecovered = (item.quantityUsed / factor) * recoveryRatio;
+
+                                // Net required is what we need MINUS what we already used (that we are "putting back" conceptually)
+                                // Actually simpler: effective stock = current + amountRecovered. 
+                                // Check: (current + recovered) < required?
+
+                                if (((ingredient.currentStock || 0) + amountRecovered) < requiredAmount) {
+                                    missingIngredients.push(ingredient.name);
+                                }
+                                continue;
+                            }
+                        }
+                    }
+
+                    // Normal Check
+                    if ((ingredient.currentStock || 0) < requiredAmount) {
+                        missingIngredients.push(ingredient.name);
+                    }
+                }
+            }
+
+            if (missingIngredients.length > 0) {
+                throw new Error(`Stock insuficiente: ${missingIngredients.join(', ')}`);
+            }
+
+
+            // 2. Execute Updates
+            const batch = writeBatch(db);
+            let ingredientsUpdatedCount = 0;
+
+            for (const item of (recipe.ingredients || [])) {
+                const ingredient = ingredients.find(i => i.id === item.ingredientId);
+                if (ingredient) {
+                    const factor = getConversionFactor(ingredient.unit);
+                    let netChange = -((item.quantityUsed / factor) * ratio); // Default: consume new amount
 
                     // If editing, add back old amount
                     if (editingLogId) {
@@ -478,7 +613,7 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
                             const oldRecipe = recipes.find(r => r.id === oldLog.recipeId);
                             if (oldRecipe && oldRecipe.totalYieldWeight) {
                                 const recoveryRatio = oldLog.quantityProduced / oldRecipe.totalYieldWeight;
-                                netChange += (item.quantityUsed * recoveryRatio);
+                                netChange += ((item.quantityUsed / factor) * recoveryRatio);
                             }
                         }
                     }
@@ -550,7 +685,8 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
                 for (const item of (recipe.ingredients || [])) {
                     const ingredient = ingredients.find(i => i.id === item.ingredientId);
                     if (ingredient) {
-                        const recovery = item.quantityUsed * ratio;
+                        const factor = getConversionFactor(ingredient.unit);
+                        const recovery = (item.quantityUsed / factor) * ratio;
                         const newStock = (ingredient.currentStock || 0) + recovery;
                         batch.update(doc(db, 'ingredients', ingredient.id), { currentStock: newStock });
                     }

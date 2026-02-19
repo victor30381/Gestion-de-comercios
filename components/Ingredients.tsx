@@ -201,7 +201,7 @@ const Ingredients: React.FC<Props> = ({ userId }) => {
                 </p>
                 <div className="mt-2 inline-block px-3 py-1 rounded-lg border-2 border-brand-brown/20 bg-brand-brown/5">
                   <span className="text-xs font-bold text-brand-brown/70 block">Stock Actual:</span>
-                  <span className={`text-lg font-bold text-brand-brown ${ing.currentStock ? 'today-neon-glow' : ''} px-2 py-0.5 rounded`}>
+                  <span className={`text-lg font-bold text-brand-brown ${(ing.currentStock || 0) > 0 ? 'today-neon-glow' : ''} px-2 py-0.5 rounded`}>
                     {ing.currentStock || 0} {ing.unit}
                   </span>
                 </div>

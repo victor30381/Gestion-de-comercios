@@ -8,6 +8,7 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
+console.log('Deployed at 2026-02-19 12:54');
 root.render(
   <React.StrictMode>
     <App />

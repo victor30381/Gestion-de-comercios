@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
-import { Order, Recipe } from '../types';
+import { Order, Recipe, Ingredient, ProductionLog } from '../types';
 import { StatCard } from './DashboardWidgets';
 
 interface FinancesViewProps {
@@ -19,6 +19,8 @@ interface DailyStat {
 const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [recipes, setRecipes] = useState<Recipe[]>([]);
+    const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+    const [productionLogs, setProductionLogs] = useState<ProductionLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [timeframe, setTimeframe] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
@@ -45,9 +47,21 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
             setRecipes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Recipe)));
         });
 
+        const qIngredients = query(collection(db, 'ingredients'), where('userId', '==', userId));
+        const unsubIng = onSnapshot(qIngredients, (snapshot) => {
+            setIngredients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ingredient)));
+        });
+
+        const qLogs = query(collection(db, 'production_logs'), where('userId', '==', userId));
+        const unsubLogs = onSnapshot(qLogs, (snapshot) => {
+            setProductionLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProductionLog)));
+        });
+
         return () => {
             unsubOrders();
             unsubRecipes();
+            unsubIng();
+            unsubLogs();
         };
     }, [userId]);
 
@@ -104,6 +118,22 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
     const totalCost = orders.reduce((sum, o) => sum + calculateOrderCost(o), 0);
     const totalProfit = Math.round(totalGross - totalCost);
 
+    // New Calculations for Cards
+    const stockValue = ingredients.reduce((sum, ing) => {
+        if ((ing.currentStock || 0) > 0) {
+            return sum + ((ing.currentStock || 0) * ing.pricePerUnit);
+        }
+        return sum;
+    }, 0);
+
+    const productionValue = productionLogs.reduce((sum, log) => {
+        const recipe = recipes.find(r => r.id === log.recipeId);
+        if (recipe && recipe.costPerGram) {
+            return sum + (log.quantityProduced * recipe.costPerGram);
+        }
+        return sum;
+    }, 0);
+
     if (loading) return <div className="p-8 text-center text-brand-brown font-serif italic">Cargando datos financieros...</div>;
 
     const maxVal = Math.max(...sortedData.map(d => d.ingresos), 1);
@@ -136,8 +166,39 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
             {/* Global Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard title="Ingresos Totales" value={`$${totalGross.toLocaleString()}`} />
-                <StatCard title="Costos Totales" value={`$${Math.round(totalCost).toLocaleString()}`} />
+                <StatCard title="Costos (Ventas)" value={`$${Math.round(totalCost).toLocaleString()}`} />
                 <StatCard title="Ganancia Neta" value={`$${totalProfit.toLocaleString()}`} subtext="Rentabilidad total" />
+            </div>
+
+            {/* Inventory & Production Stats */}
+            <h3 className="text-xl font-serif font-bold text-brand-brown mt-4 mb-2">Indicadores Operativos</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex flex-col items-center text-center hover:shadow-md transition-shadow">
+                    <span className="text-4xl mb-2">📦</span>
+                    <h4 className="text-stone-500 font-bold uppercase tracking-wider text-xs mb-1">Valor Stock Insumos</h4>
+                    <p className="text-2xl font-serif font-bold text-brand-brown">
+                        ${stockValue.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                    </p>
+                    <p className="text-xs text-stone-400 mt-2">Dinero en estantería (MP)</p>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex flex-col items-center text-center hover:shadow-md transition-shadow">
+                    <span className="text-4xl mb-2">👩‍🍳</span>
+                    <h4 className="text-stone-500 font-bold uppercase tracking-wider text-xs mb-1">Producción Registrada</h4>
+                    <p className="text-2xl font-serif font-bold text-brand-brown">
+                        ${productionValue.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                    </p>
+                    <p className="text-xs text-stone-400 mt-2">Valor costo elaborado total</p>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex flex-col items-center text-center hover:shadow-md transition-shadow">
+                    <span className="text-4xl mb-2">📈</span>
+                    <h4 className="text-stone-500 font-bold uppercase tracking-wider text-xs mb-1">Margen Promedio</h4>
+                    <p className="text-2xl font-serif font-bold text-brand-accent">
+                        {totalGross > 0 ? ((totalProfit / totalGross) * 100).toFixed(1) : 0}%
+                    </p>
+                    <p className="text-xs text-stone-400 mt-2">Sobre ventas totales</p>
+                </div>
             </div>
 
             {/* Visualización Simple */}
