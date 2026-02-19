@@ -15,6 +15,7 @@ interface NewOrderViewProps {
 // Extended OrderItem for local state to include recipe tracking
 interface LocalOrderItem extends OrderItem {
     recipeId?: string;
+    suggestedPrice?: number;
 }
 
 const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrder, readOnly, initialDate }) => {
@@ -32,7 +33,7 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
 
     // Order State
     const [items, setItems] = useState<LocalOrderItem[]>([
-        { id: '1', name: '', amount: 0, unit: 'un', quantity: 1, price: 0 }
+        { id: '1', name: '', amount: 0, unit: 'un', quantity: 1, price: 0, suggestedPrice: 0 }
     ]);
     const [deliveryDate, setDeliveryDate] = useState('');
     const [deposit, setDeposit] = useState<number>(0);
@@ -45,13 +46,17 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
         // Clients
         const qClients = query(collection(db, 'clients'), where('userId', '==', userId));
         const unsubClients = onSnapshot(qClients, (snapshot) => {
-            setClients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client)));
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
+            data.sort((a, b) => a.name.localeCompare(b.name));
+            setClients(data);
         });
 
         // Recipes (Products)
         const qRecipes = query(collection(db, 'recipes'), where('userId', '==', userId));
         const unsubRecipes = onSnapshot(qRecipes, (snapshot) => {
-            setRecipes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Recipe)));
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Recipe));
+            data.sort((a, b) => a.name.localeCompare(b.name));
+            setRecipes(data);
         });
 
         return () => {
@@ -66,15 +71,22 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
             setSelectedClientId(initialOrder.clientId);
 
             // Map items back to LocalOrderItem
-            setItems(initialOrder.items.map((i: any) => ({
-                ...i,
-                // Ensure defaults if missing
-                amount: i.amount || 0,
-                unit: i.unit || 'un',
-                quantity: i.quantity || 1,
-                price: i.price || 0,
-                recipeId: i.recipeId || '' // Ensure we try to recover this
-            })));
+            setItems(initialOrder.items.map((i: any) => {
+                // Try to calculate suggested price on load
+                const recipe = i.recipeId ? recipes.find((r: Recipe) => r.id === i.recipeId) : null;
+                const calcPrice = (recipe && i.amount) ? Math.ceil(i.amount * recipe.costPerGram * 3) : 0;
+
+                return {
+                    ...i,
+                    // Ensure defaults if missing
+                    amount: i.amount || 0,
+                    unit: i.unit || 'un',
+                    quantity: i.quantity || 1,
+                    price: i.price || 0,
+                    recipeId: i.recipeId || '',
+                    suggestedPrice: calcPrice
+                };
+            }));
 
             // Date format YYYY-MM-DD
             if (initialOrder.deliveryDate) {
@@ -98,7 +110,7 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
     const handleAddItem = () => {
         setItems([
             ...items,
-            { id: Date.now().toString(), name: '', amount: 0, unit: 'un', quantity: 1, price: 0 }
+            { id: Date.now().toString(), name: '', amount: 0, unit: 'un', quantity: 1, price: 0, suggestedPrice: 0 }
         ]);
     };
 
@@ -117,7 +129,9 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                     // Recalc price if amount is set
                     if (updatedItem.amount > 0) {
                         // Price = Weight * CostPerGram * 3
-                        updatedItem.price = Math.ceil(updatedItem.amount * recipe.costPerGram * 3);
+                        const calcPrice = Math.ceil(updatedItem.amount * recipe.costPerGram * 3);
+                        updatedItem.price = calcPrice;
+                        updatedItem.suggestedPrice = calcPrice;
                     }
                 }
             }
@@ -127,7 +141,9 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                 if (updatedItem.recipeId) {
                     const recipe = recipes.find(r => r.id === updatedItem.recipeId);
                     if (recipe) {
-                        updatedItem.price = Math.ceil(Number(value) * recipe.costPerGram * 3);
+                        const calcPrice = Math.ceil(Number(value) * recipe.costPerGram * 3);
+                        updatedItem.price = calcPrice;
+                        updatedItem.suggestedPrice = calcPrice;
                     }
                 }
             }
@@ -547,12 +563,20 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                                     </div>
                                     <div className="col-span-5 md:col-span-2">
                                         <label className="block text-xs font-bold text-brand-brown/60 mb-1">Total</label>
-                                        <input
-                                            type="number"
-                                            disabled // Price is automated
-                                            value={item.price || ''}
-                                            className="w-full p-2 rounded-lg border border-brand-brown/20 bg-brand-brown/10 font-bold text-brand-brown"
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                value={item.price || ''}
+                                                onChange={(e) => handleItemChange(item.id, 'price', parseFloat(e.target.value) || 0)}
+                                                disabled={readOnly}
+                                                className="w-full p-2 rounded-lg border border-brand-brown/20 bg-white font-bold text-brand-brown focus:ring-2 focus:ring-brand-accent/50 outline-none"
+                                            />
+                                            {!!item.suggestedPrice && item.suggestedPrice > 0 && (
+                                                <div className="mt-1 text-[10px] text-brand-brown/60 font-medium px-1">
+                                                    Sugerido: ${item.suggestedPrice.toLocaleString()}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

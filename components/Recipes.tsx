@@ -31,6 +31,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
   const [conservation, setConservation] = useState('');
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [viewRecipe, setViewRecipe] = useState<Recipe | null>(null);
 
   // Feedback States
   const [successMsg, setSuccessMsg] = useState('');
@@ -482,6 +483,17 @@ const Recipes: React.FC<Props> = ({ userId }) => {
                   <div className="flex gap-2 mt-2 pt-3 border-t border-brand-brown/5">
                     <button
                       type="button"
+                      onClick={() => setViewRecipe(recipe)}
+                      className="flex-1 py-2 text-sm font-semibold text-brand-brown bg-brand-accent/20 rounded-lg hover:bg-brand-accent/40 transition flex justify-center items-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      Ver
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleEdit(recipe)}
                       className="flex-1 py-2 text-sm font-semibold text-brand-brown bg-brand-brown/5 rounded-lg hover:bg-brand-brown/10 transition flex justify-center items-center gap-2"
                     >
@@ -507,6 +519,115 @@ const Recipes: React.FC<Props> = ({ userId }) => {
           )
         }
       </div >
+
+      {/* VIEW RECIPE MODAL */}
+      {viewRecipe && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-brown/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-3xl shadow-2xl p-6 relative animate-in zoom-in-95 duration-200 border border-brand-brown/10 custom-scrollbar">
+
+            <button
+              onClick={() => setViewRecipe(null)}
+              className="absolute top-4 right-4 p-2 bg-brand-brown/5 rounded-full hover:bg-brand-brown/10 text-brand-brown transition-colors z-10"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <h2 className="text-2xl font-serif font-bold text-center text-brand-brown mb-6 pr-8">
+              {viewRecipe.name}
+            </h2>
+
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="bg-brand-beige/30 p-3 rounded-xl border border-brand-brown/5 text-center">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-brown/60 mb-1">Rendimiento</span>
+                <span className="block font-bold text-brand-brown text-lg">{viewRecipe.totalYieldWeight} <span className="text-xs font-normal">g/un</span></span>
+              </div>
+              <div className="bg-brand-beige/30 p-3 rounded-xl border border-brand-brown/5 text-center">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-brown/60 mb-1">Costo Total</span>
+                <span className="block font-bold text-brand-brown text-lg">${viewRecipe.totalCost.toFixed(0)}</span>
+              </div>
+              <div className="bg-brand-beige/30 p-3 rounded-xl border border-brand-brown/5 text-center">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-brown/60 mb-1">Costo/g</span>
+                <span className="block font-bold text-brand-brown text-lg">${viewRecipe.costPerGram.toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* Ingredients List */}
+            <div className="mb-6">
+              <h3 className="font-bold text-brand-brown mb-3 flex items-center gap-2 text-sm uppercase tracking-wide opacity-80 border-b border-brand-brown/10 pb-1">
+                Ingredientes
+              </h3>
+              <div className="space-y-2 bg-brand-brown/5 p-4 rounded-xl">
+                {viewRecipe.ingredients.map((ing, idx) => {
+                  const fullIng = availableIngredients.find(i => i.id === ing.ingredientId);
+                  return (
+                    <div key={idx} className="flex justify-between items-center text-sm border-b border-dashed border-brand-brown/10 last:border-0 pb-2 last:pb-0 mb-2 last:mb-0">
+                      <span className="font-medium text-brand-brown">{fullIng?.name || 'Ingrediente eliminado'}</span>
+                      <div className="text-right flex flex-col items-end">
+                        <span className="font-bold text-brand-brown">{ing.quantityUsed} <span className="text-xs font-normal opacity-70">{fullIng?.unit || 'un'}</span></span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Nutritional Info */}
+            <div className="mb-6">
+              <h3 className="font-bold text-brand-brown mb-3 flex items-center gap-2 text-sm uppercase tracking-wide opacity-80 border-b border-brand-brown/10 pb-1">
+                Info. Nutricional (Total)
+              </h3>
+              <div className="grid grid-cols-5 gap-2 text-center">
+                <div className="flex flex-col p-2 bg-white border border-brand-brown/10 rounded-lg shadow-sm">
+                  <span className="text-[9px] font-bold text-brand-brown/60 uppercase">Kcal</span>
+                  <span className="font-bold text-brand-brown">{viewRecipe.nutritionalInfo?.calories || 0}</span>
+                </div>
+                <div className="flex flex-col p-2 bg-white border border-brand-brown/10 rounded-lg shadow-sm">
+                  <span className="text-[9px] font-bold text-brand-brown/60 uppercase">Prot</span>
+                  <span className="font-bold text-brand-brown">{viewRecipe.nutritionalInfo?.protein || 0}</span>
+                </div>
+                <div className="flex flex-col p-2 bg-white border border-brand-brown/10 rounded-lg shadow-sm">
+                  <span className="text-[9px] font-bold text-brand-brown/60 uppercase">Grasa</span>
+                  <span className="font-bold text-brand-brown">{viewRecipe.nutritionalInfo?.fat || 0}</span>
+                </div>
+                <div className="flex flex-col p-2 bg-white border border-brand-brown/10 rounded-lg shadow-sm">
+                  <span className="text-[9px] font-bold text-brand-brown/60 uppercase">Carb</span>
+                  <span className="font-bold text-brand-brown">{viewRecipe.nutritionalInfo?.carbs || 0}</span>
+                </div>
+                <div className="flex flex-col p-2 bg-white border border-brand-brown/10 rounded-lg shadow-sm">
+                  <span className="text-[9px] font-bold text-brand-brown/60 uppercase">Fibra</span>
+                  <span className="font-bold text-brand-brown">{viewRecipe.nutritionalInfo?.fiber || 0}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Details */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div>
+                <h3 className="font-bold text-brand-brown mb-1 text-xs uppercase tracking-wide opacity-80">Porción Sugerida</h3>
+                <p className="p-3 bg-brand-brown/5 rounded-lg text-brand-brown font-medium text-sm border border-brand-brown/10">
+                  {viewRecipe.portionWeight ? `${viewRecipe.portionWeight} g` : 'No especificada'}
+                </p>
+              </div>
+              <div>
+                <h3 className="font-bold text-brand-brown mb-1 text-xs uppercase tracking-wide opacity-80">Conservación</h3>
+                <p className="p-3 bg-brand-brown/5 rounded-lg text-brand-brown font-medium text-sm border border-brand-brown/10">
+                  {viewRecipe.conservation || 'No especificada'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setViewRecipe(null)}
+              className="w-full py-3.5 bg-brand-brown text-white font-bold rounded-xl shadow-lg hover:bg-black transition-colors"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
 
       {successMsg && (
         <div className="fixed bottom-20 md:bottom-10 left-4 right-4 bg-brand-brown text-white p-4 rounded-xl text-center shadow-lg animate-bounce z-50 font-serif">

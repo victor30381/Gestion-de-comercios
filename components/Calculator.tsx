@@ -42,8 +42,18 @@ const Calculator: React.FC<Props> = ({ userId }) => {
   const suggestedPrice = realCost * 3;
   const profit = suggestedPrice - realCost;
 
+  const [customPrice, setCustomPrice] = useState('');
+
+  useEffect(() => {
+    if (suggestedPrice) {
+      setCustomPrice(Math.round(suggestedPrice).toString());
+    }
+  }, [suggestedPrice]);
+
   const generateTicket = async () => {
     if (!selectedRecipe) return;
+
+    const finalPrice = parseFloat(customPrice) || 0;
 
     try {
       console.log("Iniciando generación de PDF...");
@@ -87,7 +97,7 @@ const Calculator: React.FC<Props> = ({ userId }) => {
           // PRICE (Re-added)
           doc.setFontSize(24);
           doc.setFont("helvetica", "bold");
-          doc.text(`$${suggestedPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`, 40, currentY + 5, { align: "center" });
+          doc.text(`$${Math.round(finalPrice).toLocaleString('es-AR')}`, 40, currentY + 5, { align: "center" });
           currentY += 15;
 
           // Divider Line (Bold)
@@ -367,6 +377,21 @@ const Calculator: React.FC<Props> = ({ userId }) => {
             <div className="mt-6 pt-4 border-t border-white/10 flex justify-between items-center">
               <span className="text-sm opacity-80">Costo Real de Producción:</span>
               <span className="text-xl font-bold">${realCost.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Custom Price Input */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-brand-brown/10">
+            <label className="block text-sm font-bold text-brand-brown mb-2">Precio de Venta Final (para Ticket)</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-brown font-bold">$</span>
+              <input
+                type="number"
+                value={customPrice}
+                onChange={(e) => setCustomPrice(e.target.value)}
+                className="w-full pl-8 p-3 rounded-xl border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-xl font-bold text-brand-brown"
+                placeholder="Ingrese precio..."
+              />
             </div>
           </div>
 
