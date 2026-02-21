@@ -73,16 +73,18 @@ const Calculator: React.FC<Props> = ({ userId }) => {
       console.log("Iniciando generación de PDF...");
       // alert("Iniciando generación de PDF..."); 
 
+      const finalHeight = isReseller ? 180 : 230;
+
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: [80, 230] // Aumentar altura considerablemente para evitar cortes
+        format: [80, finalHeight]
       });
 
       const drawContent = (withLogo: boolean) => {
         try {
           // Header
-          // Adjusted headerY for smaller logo (50mm + 5mm padding = 55mm start, let's say 60 for safety)
+          // Adjusted headerY for smaller logo
           let currentY = withLogo ? 60 : 20;
 
           // Helper for centering text
@@ -282,13 +284,13 @@ const Calculator: React.FC<Props> = ({ userId }) => {
             }).filter(name => name !== '');
 
             if (recipeIngredients.length > 0) {
-              const ingText = "INGREDIENTES: " + recipeIngredients.join(', ').toUpperCase();
+              const ingText = "INGREDIENTES MÁS UTILIZADOS: " + recipeIngredients.join(', ').toUpperCase();
               currentY += 8;
-              doc.setFontSize(7);
-              doc.setFont("helvetica", "normal");
+              doc.setFontSize(9);
+              doc.setFont("helvetica", "bold");
               const ingLines = doc.splitTextToSize(ingText, 70);
               doc.text(ingLines, 5, currentY);
-              currentY += (ingLines.length * 3);
+              currentY += (ingLines.length * 4);
             }
           }
 
@@ -308,7 +310,6 @@ const Calculator: React.FC<Props> = ({ userId }) => {
             alert("Se intentó abrir el PDF pero el navegador bloqueó la ventana emergente. Se ha descargado el archivo.");
           }
 
-          // Clean up Blob URL after a delay
           setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
 
         } catch (innerErr: any) {
