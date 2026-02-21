@@ -238,13 +238,15 @@ const Calculator: React.FC<Props> = ({ userId }) => {
           doc.text(`VENCE: ${venceDate}`, 5, currentY);
           currentY += 7;
 
-          // NET WEIGHT BOX
-          doc.setLineWidth(1); // Thicker border
-          doc.rect(5, currentY, 70, 10);
-          doc.setFontSize(12);
-          doc.setFont("helvetica", "bold");
-          doc.text(`NETO: ${weight}G`, 40, currentY + 7, { align: "center" });
-          currentY += 15;
+          if (!isReseller) {
+            // NET WEIGHT BOX
+            doc.setLineWidth(1); // Thicker border
+            doc.rect(5, currentY, 70, 10);
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text(`NETO: ${weight}G`, 40, currentY + 7, { align: "center" });
+            currentY += 15;
+          }
 
           // SIN AZUCAR BOX
           doc.setLineWidth(1);
