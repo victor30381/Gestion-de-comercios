@@ -108,16 +108,18 @@ const Calculator: React.FC<Props> = ({ userId }) => {
           doc.line(5, currentY, 75, currentY);
           currentY += 5;
 
-          // PRICE (Re-added)
-          doc.setFontSize(24);
-          doc.setFont("helvetica", "bold");
-          doc.text(`$${Math.round(finalPrice).toLocaleString('es-AR')}`, 40, currentY + 5, { align: "center" });
-          currentY += 15;
+          if (!isReseller) {
+            // PRICE (Re-added)
+            doc.setFontSize(24);
+            doc.setFont("helvetica", "bold");
+            doc.text(`$${Math.round(finalPrice).toLocaleString('es-AR')}`, 40, currentY + 5, { align: "center" });
+            currentY += 15;
 
-          // Divider Line (Bold)
-          doc.setLineWidth(1);
-          doc.line(5, currentY, 75, currentY);
-          currentY += 5;
+            // Divider Line (Bold)
+            doc.setLineWidth(1);
+            doc.line(5, currentY, 75, currentY);
+            currentY += 5;
+          }
 
           // DATOS NUTRICIONALES Header
           centerText("DATOS NUTRICIONALES", currentY, 11, "bold");
@@ -449,7 +451,7 @@ const Calculator: React.FC<Props> = ({ userId }) => {
             </svg>
             Generar Ticket PDF
           </button>
-          
+
           {/* Reseller PDF Ticket Button */}
           <button
             onClick={() => generateTicket(true)}
