@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, QuerySnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Recipe } from '../types';
+import { Recipe, Ingredient } from '../types';
 import jsPDF from 'jspdf';
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
 
 const Calculator: React.FC<Props> = ({ userId }) => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [selectedRecipeId, setSelectedRecipeId] = useState('');
   const [sellWeight, setSellWeight] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -32,6 +33,19 @@ const Calculator: React.FC<Props> = ({ userId }) => {
     return () => unsubscribe();
   }, [userId]);
 
+  useEffect(() => {
+    const q = query(collection(db, 'ingredients'), where('userId', '==', userId));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot: QuerySnapshot<DocumentData>) => {
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ingredient));
+        setIngredients(data);
+      },
+      (err) => console.error("Firestore Error for ingredients:", err)
+    );
+    return () => unsubscribe();
+  }, [userId]);
+
   const selectedRecipe = recipes.find(r => r.id === selectedRecipeId);
 
   // Calculations
@@ -50,7 +64,7 @@ const Calculator: React.FC<Props> = ({ userId }) => {
     }
   }, [suggestedPrice]);
 
-  const generateTicket = async () => {
+  const generateTicket = async (isReseller: boolean = false) => {
     if (!selectedRecipe) return;
 
     const finalPrice = parseFloat(customPrice) || 0;
@@ -257,7 +271,22 @@ const Calculator: React.FC<Props> = ({ userId }) => {
           doc.setFont("helvetica", "normal");
           doc.text("@alternativaketo", 40, currentY, { align: "center" });
 
+          if (isReseller && ingredients.length > 0) {
+            const recipeIngredients = selectedRecipe.ingredients.map(ri => {
+              const ing = ingredients.find(i => i.id === ri.ingredientId);
+              return ing ? ing.name : '';
+            }).filter(name => name !== '');
 
+            if (recipeIngredients.length > 0) {
+              const ingText = "INGREDIENTES: " + recipeIngredients.join(', ').toUpperCase();
+              currentY += 8;
+              doc.setFontSize(7);
+              doc.setFont("helvetica", "normal");
+              const ingLines = doc.splitTextToSize(ingText, 70);
+              doc.text(ingLines, 5, currentY);
+              currentY += (ingLines.length * 3);
+            }
+          }
 
           // Ensure simple filename and open in new tab
           const cleanName = selectedRecipe.name.replace(/[^a-zA-Z0-9]/g, '_');
@@ -283,6 +312,11 @@ const Calculator: React.FC<Props> = ({ userId }) => {
           alert(`Error al dibujar contenido del PDF: ${innerErr.message}`);
         }
       };
+
+      if (isReseller) {
+        drawContent(false);
+        return;
+      }
 
       const img = new Image();
       // Use proper base URL for GitHub Pages / Dev
@@ -407,13 +441,24 @@ const Calculator: React.FC<Props> = ({ userId }) => {
 
           {/* PDF Ticket Button */}
           <button
-            onClick={generateTicket}
+            onClick={() => generateTicket(false)}
             className="w-full bg-[#2C1810] text-white py-3 rounded-xl font-bold shadow-md hover:bg-black transition flex items-center justify-center gap-2"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
             Generar Ticket PDF
+          </button>
+          
+          {/* Reseller PDF Ticket Button */}
+          <button
+            onClick={() => generateTicket(true)}
+            className="w-full bg-white text-brand-brown border-2 border-[#2C1810] py-3 rounded-xl font-bold shadow-md hover:bg-brand-brown/5 transition flex items-center justify-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Generar Ticket Revendedor PDF
           </button>
         </div>
       )}
