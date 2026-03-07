@@ -360,9 +360,44 @@ interface ProductionSummaryProps {
 
 export const ProductionSummary: React.FC<ProductionSummaryProps> = ({ orders }) => {
     const [expandedItem, setExpandedItem] = useState<string | null>(null);
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+    const [crossedOutItems, setCrossedOutItems] = useState<Set<string>>(new Set());
+
+    const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const [year, month, day] = e.target.value.split('-').map(Number);
+        setSelectedDate(new Date(year, month - 1, day));
+        setCrossedOutItems(new Set()); // Reset crosses when date changes
+    };
+
+    const toggleCrossOut = (itemName: string) => {
+        setCrossedOutItems(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(itemName)) {
+                newSet.delete(itemName);
+            } else {
+                newSet.add(itemName);
+            }
+            return newSet;
+        });
+    };
+
+    const formatDateForInput = (date: Date) => {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    };
+
+    // Filter orders by selected date
+    const filteredOrders = orders.filter(o => {
+        const d = new Date(o.deliveryDate);
+        return d.getDate() === selectedDate.getDate() &&
+               d.getMonth() === selectedDate.getMonth() &&
+               d.getFullYear() === selectedDate.getFullYear();
+    });
 
     // Group items and collect client details
-    const summary = orders.reduce((acc, order) => {
+    const summary = filteredOrders.reduce((acc, order) => {
         order.items.forEach(item => {
             if (!acc[item.name]) {
                 acc[item.name] = { total: 0, clients: [] };
@@ -378,50 +413,83 @@ export const ProductionSummary: React.FC<ProductionSummaryProps> = ({ orders }) 
 
     const items: [string, { total: number, clients: { name: string, qty: number }[] }][] = Object.entries(summary);
 
-    if (items.length === 0) return null;
-
     return (
-        <div className="bg-brand-cream rounded-xl shadow-sm border border-[#E5DCD3] p-6 w-full relative">
-            <h3 className="text-xl font-serif font-bold text-brand-brown mb-4 flex items-center gap-2">
-                <span className="text-2xl">👩‍🍳</span> Resumen de Producción (Hoy)
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {items.map(([name, data]) => (
-                    <div key={name} className="relative group">
-                        <button
-                            onClick={() => setExpandedItem(expandedItem === name ? null : name)}
-                            className={`w-full bg-white p-4 rounded-xl border flex justify-between items-center shadow-sm hover:shadow-md transition-all active:scale-[0.98] ${expandedItem === name ? 'border-brand-accent ring-2 ring-brand-accent/20' : 'border-brand-brown/10'}`}
-                        >
-                            <span className="text-brand-brown font-bold text-sm leading-tight text-left">{name}</span>
-                            <span className="bg-brand-brown text-white px-3 py-1 rounded-full text-base font-bold shadow-sm whitespace-nowrap ml-2">
-                                {data.total}
-                            </span>
-                        </button>
-
-                        {/* Dropdown for client details (UPWARDS) */}
-                        {expandedItem === name && (
-                            <div className="absolute bottom-full left-0 right-0 z-50 mb-2 bg-white rounded-xl shadow-2xl border border-brand-accent/20 p-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                                <p className="text-[10px] font-bold text-stone-400 uppercase mb-2 tracking-wider">¿Para quién es?</p>
-                                <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                                    {data.clients.map((c, idx) => (
-                                        <div key={idx} className="flex justify-between items-center text-xs pb-1.5 border-b border-stone-50 last:border-0 last:pb-0">
-                                            <span className="text-brand-brown/80 font-medium">{c.name}</span>
-                                            <span className="font-bold text-brand-accent bg-brand-accent/5 px-2 py-0.5 rounded">x{c.qty}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); setExpandedItem(null); }}
-                                    className="w-full mt-3 text-[10px] text-stone-400 hover:text-brand-brown font-bold"
-                                >
-                                    Cerrar detalle
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                ))}
+        <div className="bg-brand-cream rounded-xl shadow-sm border border-[#E5DCD3] p-4 sm:p-6 w-full relative">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <h3 className="text-lg sm:text-xl font-serif font-bold text-brand-brown flex items-center gap-2">
+                    <span className="text-xl sm:text-2xl">👩‍🍳</span> Resumen de Producción
+                </h3>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <label className="text-sm font-bold text-brand-brown whitespace-nowrap">Fecha:</label>
+                    <input 
+                        type="date"
+                        className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white shadow-sm"
+                        value={formatDateForInput(selectedDate)}
+                        onChange={handleDateChange}
+                    />
+                </div>
             </div>
+
+            {items.length === 0 ? (
+                <p className="text-center text-brand-brown/50 italic py-8">No hay producción programada para esta fecha.</p>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {items.map(([name, data]) => {
+                        const isCrossed = crossedOutItems.has(name);
+                        return (
+                        <div key={name} className="relative group">
+                            <div
+                                className={`w-full bg-white p-3 sm:p-4 rounded-xl border flex flex-col justify-center items-stretch shadow-sm hover:shadow-md transition-all ${expandedItem === name ? 'border-brand-accent ring-2 ring-brand-accent/20' : 'border-brand-brown/10'} ${isCrossed ? 'opacity-50 bg-stone-50' : ''}`}
+                            >
+                                <div className="flex justify-between items-center w-full">
+                                    <div 
+                                        className="flex-1 cursor-pointer flex items-center pr-2 py-1"
+                                        onClick={() => toggleCrossOut(name)}
+                                        title="Click para tachar/destachar producto"
+                                    >
+                                        <span className={`text-brand-brown font-bold text-sm leading-tight text-left transition-all ${isCrossed ? 'line-through text-stone-400' : ''}`}>
+                                            {name}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`bg-brand-brown text-white px-3 py-1 rounded-full text-base font-bold shadow-sm whitespace-nowrap transition-colors ${isCrossed ? 'bg-stone-400' : ''}`}>
+                                            {data.total}
+                                        </span>
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); setExpandedItem(expandedItem === name ? null : name); }}
+                                            className="text-brand-brown p-1.5 hover:bg-brand-brown/10 rounded-lg transition-colors flex items-center justify-center"
+                                            title="Ver detalle para clientes"
+                                        >
+                                            <svg className={`w-4 h-4 transition-transform ${expandedItem === name ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+    
+                            {/* Dropdown for client details (UPWARDS) */}
+                            {expandedItem === name && (
+                                <div className="absolute bottom-full left-0 right-0 z-50 mb-2 bg-white rounded-xl shadow-2xl border border-brand-accent/20 p-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                                    <p className="text-[10px] font-bold text-stone-400 uppercase mb-2 tracking-wider">¿Para quién es?</p>
+                                    <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                                        {data.clients.map((c, idx) => (
+                                            <div key={idx} className="flex justify-between items-center text-xs pb-1.5 border-b border-stone-50 last:border-0 last:pb-0">
+                                                <span className="text-brand-brown/80 font-medium">{c.name}</span>
+                                                <span className="font-bold text-brand-accent bg-brand-accent/5 px-2 py-0.5 rounded">x{c.qty}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setExpandedItem(null); }}
+                                        className="w-full mt-3 text-[10px] text-stone-400 hover:text-brand-brown font-bold"
+                                    >
+                                        Cerrar detalle
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )})}
+                </div>
+            )}
 
             {/* Background click to close overlay */}
             {expandedItem && (

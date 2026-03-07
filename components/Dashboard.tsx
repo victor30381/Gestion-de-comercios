@@ -77,17 +77,14 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, onEditOrder, onViewOrder,
 
     // MONTHLY STATS
     const currentMonth = today.getMonth();
-    const monthlyOrdersList = orders.filter(o => new Date(o.deliveryDate).getMonth() === currentMonth);
+    const currentYear = today.getFullYear();
+    const monthlyOrdersList = orders.filter(o => {
+        const d = new Date(o.deliveryDate);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
 
     const monthlyStats = monthlyOrdersList.reduce((acc, o) => {
-        const deliveryDate = new Date(o.deliveryDate);
-        deliveryDate.setHours(0, 0, 0, 0);
-
-        // Logic for current logic of "income": Total if completed/past, Deposit if future
-        const isDelivered = o.status === 'completed';
-        const isPastDue = deliveryDate < today;
-
-        const orderValue = (isDelivered || isPastDue) ? (o.total || 0) : (o.deposit || 0);
+        const orderValue = o.total || 0;
         const orderCost = calculateOrderCost(o);
 
         return {
@@ -122,7 +119,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, onEditOrder, onViewOrder,
             </div>
 
             {/* Production Summary Row */}
-            <ProductionSummary orders={todayOrdersList} />
+            <ProductionSummary orders={orders} />
         </div>
     );
 };
