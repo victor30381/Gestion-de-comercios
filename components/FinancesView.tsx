@@ -3,6 +3,7 @@ import { db } from '../firebase';
 import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Order, Recipe, Ingredient, ProductionLog } from '../types';
 import { StatCard } from './DashboardWidgets';
+import jsPDF from 'jspdf';
 
 interface FinancesViewProps {
     userId: string;
@@ -14,6 +15,7 @@ interface DailyStat {
     costos: number;
     ganancias: number;
     rawDate: Date;
+    orders: Order[];
 }
 
 const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
@@ -23,6 +25,11 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
     const [productionLogs, setProductionLogs] = useState<ProductionLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [timeframe, setTimeframe] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+    
+    // Filtros de periodo
+    const [selectedDate, setSelectedDate] = useState<string>(''); // YYYY-MM-DD
+    const [selectedWeek, setSelectedWeek] = useState<string>(''); // YYYY-Www
+    const [selectedMonth, setSelectedMonth] = useState<string>(''); // YYYY-MM
 
     useEffect(() => {
         if (!userId) return;
@@ -69,7 +76,13 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
         return order.items.reduce((sum, item: any) => {
             const recipe = recipes.find(r => r.id === item.recipeId);
             if (recipe) {
-                return sum + (item.amount * recipe.costPerGram * item.quantity);
+                if (recipe.isPromo) {
+                    // Costo total de promo * cantidad
+                    return sum + (recipe.totalCost * item.quantity);
+                } else {
+                    // Costo gramo * cantidad en gramos * cant de items (unidades o bandejas)
+                    return sum + (item.amount * recipe.costPerGram * item.quantity);
+                }
             }
             return sum + (item.price * item.quantity / 3);
         }, 0);
@@ -82,18 +95,51 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
         return new Date(d.setDate(diff));
     };
 
-    // Group data by selected timeframe
-    const aggregatedDataMap = orders.reduce((acc, order) => {
+    const getIsoWeekString = (date: Date) => {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+        return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+    };
+
+    const isFiltered = (timeframe === 'daily' && selectedDate) || 
+                       (timeframe === 'weekly' && selectedWeek) || 
+                       (timeframe === 'monthly' && selectedMonth);
+
+    const filteredOrders = orders.filter(order => {
+        if (timeframe === 'daily' && selectedDate) {
+            const mMonth = String(order.deliveryDate.getMonth() + 1).padStart(2, '0');
+            const mDay = String(order.deliveryDate.getDate()).padStart(2, '0');
+            const orderDateStr = `${order.deliveryDate.getFullYear()}-${mMonth}-${mDay}`;
+            return orderDateStr === selectedDate;
+        }
+        if (timeframe === 'weekly' && selectedWeek) {
+            return getIsoWeekString(order.deliveryDate) === selectedWeek;
+        }
+        if (timeframe === 'monthly' && selectedMonth) {
+            const mMonth = String(order.deliveryDate.getMonth() + 1).padStart(2, '0');
+            const orderMonthStr = `${order.deliveryDate.getFullYear()}-${mMonth}`;
+            return orderMonthStr === selectedMonth;
+        }
+        return true;
+    });
+
+    const groupingMode = isFiltered ? 'daily' : timeframe;
+
+    // Group data by selected timeframe or grouping mode
+    const aggregatedDataMap = filteredOrders.reduce((acc, order) => {
         let dateKey = "";
         let rawDate = order.deliveryDate;
 
-        if (timeframe === 'daily') {
+        if (groupingMode === 'daily') {
             dateKey = order.deliveryDate.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
-        } else if (timeframe === 'weekly') {
+        } else if (groupingMode === 'weekly') {
             const startOfWeek = getStartOfWeek(order.deliveryDate);
             dateKey = `Sem. ${startOfWeek.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}`;
             rawDate = startOfWeek;
-        } else if (timeframe === 'monthly') {
+        } else if (groupingMode === 'monthly') {
             dateKey = order.deliveryDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
             rawDate = new Date(order.deliveryDate.getFullYear(), order.deliveryDate.getMonth(), 1);
         }
@@ -103,19 +149,20 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
         const profit = gross - cost;
 
         if (!acc[dateKey]) {
-            acc[dateKey] = { date: dateKey, ingresos: 0, costos: 0, ganancias: 0, rawDate };
+            acc[dateKey] = { date: dateKey, ingresos: 0, costos: 0, ganancias: 0, rawDate, orders: [] };
         }
         acc[dateKey].ingresos += gross;
         acc[dateKey].costos += Math.round(cost);
         acc[dateKey].ganancias += Math.round(profit);
+        acc[dateKey].orders.push(order);
         return acc;
     }, {} as Record<string, DailyStat>);
 
     const sortedData: DailyStat[] = (Object.values(aggregatedDataMap) as DailyStat[]).sort((a, b) => a.rawDate.getTime() - b.rawDate.getTime());
 
     // Totals
-    const totalGross = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-    const totalCost = orders.reduce((sum, o) => sum + calculateOrderCost(o), 0);
+    const totalGross = filteredOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const totalCost = filteredOrders.reduce((sum, o) => sum + calculateOrderCost(o), 0);
     const totalProfit = Math.round(totalGross - totalCost);
 
     // New Calculations for Cards
@@ -134,6 +181,132 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
         return sum;
     }, 0);
 
+    const generateReportPDF = () => {
+        const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        let currentY = 20;
+        const marginLeft = 15;
+        const pageWidth = doc.internal.pageSize.getWidth();
+
+        // Colors
+        const primaryColor = '#2C1810';
+        const accentColor = '#D4A373';
+
+        // Title
+        doc.setFontSize(22);
+        doc.setTextColor(primaryColor);
+        doc.setFont("helvetica", "bold");
+        doc.text("Reporte de Ventas", pageWidth / 2, currentY, { align: "center" });
+        currentY += 8;
+        
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "normal");
+        const periodName = timeframe === 'daily' ? 'Diaria' : timeframe === 'weekly' ? 'Semanal' : 'Mensual';
+        doc.text(`Vista: ${periodName} - Generado el ${new Date().toLocaleDateString('es-AR')}`, pageWidth / 2, currentY, { align: "center" });
+        currentY += 15;
+
+        // Loop through sortedData
+        sortedData.forEach((stat) => {
+            // Check page limit
+            if (currentY > 260) {
+                doc.addPage();
+                currentY = 20;
+            }
+
+            // Period Header
+            doc.setFillColor(accentColor);
+            doc.rect(marginLeft, currentY - 5, pageWidth - marginLeft * 2, 8, 'F');
+            doc.setTextColor('#ffffff');
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.text(`${stat.date.toUpperCase()}`, marginLeft + 5, currentY + 0.5);
+            
+            // Period Summary Right Aligned
+            const summaryText = `Total: $${stat.ingresos.toLocaleString()} | Costo: $${stat.costos.toLocaleString()} | Ganancia: $${stat.ganancias.toLocaleString()}`;
+            doc.setFont("helvetica", "bold");
+            doc.text(summaryText, pageWidth - marginLeft - 5, currentY + 0.5, { align: "right" });
+            
+            currentY += 8;
+            doc.setTextColor(primaryColor);
+
+            // Print Orders headers
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "bold");
+            
+            doc.text("Día/Hora", marginLeft + 2, currentY);
+            doc.text("Detalle (Productos)", marginLeft + 35, currentY);
+            doc.text("Costo", marginLeft + 120, currentY);
+            doc.text("Venta", marginLeft + 145, currentY);
+            doc.text("Ganancia", marginLeft + 170, currentY);
+            
+            currentY += 2;
+            doc.setLineWidth(0.5);
+            doc.setDrawColor(200, 200, 200);
+            doc.line(marginLeft, currentY, pageWidth - marginLeft, currentY);
+            currentY += 5;
+
+            // Sort orders chronologically within period
+            const periodOrders = [...stat.orders].sort((a,b) => a.deliveryDate.getTime() - b.deliveryDate.getTime());
+
+            periodOrders.forEach(order => {
+                if (currentY > 270) {
+                    doc.addPage();
+                    currentY = 20;
+                    
+                    // Reprint headers
+                    doc.setFontSize(9);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(primaryColor);
+                    doc.text("Día/Hora", marginLeft + 2, currentY);
+                    doc.text("Detalle (Productos)", marginLeft + 35, currentY);
+                    doc.text("Costo", marginLeft + 120, currentY);
+                    doc.text("Venta ($)", marginLeft + 145, currentY);
+                    doc.text("Ganancia", marginLeft + 170, currentY);
+                    currentY += 2;
+                    doc.line(marginLeft, currentY, pageWidth - marginLeft, currentY);
+                    currentY += 5;
+                }
+
+                doc.setFont("helvetica", "normal");
+                
+                // DateTime
+                const dateStr = order.deliveryDate.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }) + ' ' + order.deliveryDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute:'2-digit' });
+                doc.text(dateStr, marginLeft + 2, currentY);
+
+                // Items summary
+                const itemsStr = order.items.map(i => `${i.quantity}x ${i.name}`).join(', ');
+                const itemsLines = doc.splitTextToSize(itemsStr, 80);
+                doc.text(itemsLines, marginLeft + 35, currentY);
+                
+                const c_cost = Math.round(calculateOrderCost(order));
+                const c_price = Math.round(order.total);
+                const c_prof = c_price - c_cost;
+
+                doc.text(`$${c_cost.toLocaleString('es-AR')}`, marginLeft + 120, currentY);
+                doc.text(`$${c_price.toLocaleString('es-AR')}`, marginLeft + 145, currentY);
+                Object.assign(doc, { setTextColor: doc.setTextColor }); 
+                doc.text(`$${c_prof.toLocaleString('es-AR')}`, marginLeft + 170, currentY);
+
+                currentY += (itemsLines.length * 4) + 2;
+            });
+            currentY += 5; // space between periods
+        });
+
+        // Open in new tab/save fallback
+        const pdfBlob = doc.output('blob');
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        const newWindow = window.open(blobUrl, '_blank');
+        if (!newWindow) {
+            doc.save(`reporte_financiero_${timeframe}.pdf`);
+            alert("El navegador bloqueó la ventana emergente. El archivo se ha descargado.");
+        }
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    };
+
     if (loading) return <div className="p-8 text-center text-brand-brown font-serif italic">Cargando datos financieros...</div>;
 
     const maxVal = Math.max(...sortedData.map(d => d.ingresos), 1);
@@ -146,20 +319,79 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
                     <p className="text-stone-500 font-medium">Análisis detallado de ingresos, costos y rentabilidad.</p>
                 </div>
 
-                {/* Timeframe Selector */}
-                <div className="flex bg-brand-cream border border-[#E5DCD3] p-1 rounded-xl shadow-sm self-start md:self-auto">
-                    {(['daily', 'weekly', 'monthly'] as const).map((t) => (
-                        <button
-                            key={t}
-                            onClick={() => setTimeframe(t)}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all uppercase tracking-wider
-                                ${timeframe === t
-                                    ? 'bg-brand-brown text-white shadow-md'
-                                    : 'text-brand-brown/60 hover:text-brand-brown hover:bg-white/50'}`}
-                        >
-                            {t === 'daily' ? 'Día' : t === 'weekly' ? 'Semana' : 'Mes'}
-                        </button>
-                    ))}
+                {/* Timeframe Selector and Filters */}
+                <div className="flex bg-brand-cream border border-[#E5DCD3] p-1 rounded-xl shadow-sm self-start md:self-auto items-center gap-1 flex-wrap md:flex-nowrap">
+                    <div className="flex bg-white/50 rounded-lg p-1">
+                        {(['daily', 'weekly', 'monthly'] as const).map((t) => (
+                            <button
+                                key={t}
+                                onClick={() => {
+                                    setTimeframe(t);
+                                    setSelectedDate('');
+                                    setSelectedWeek('');
+                                    setSelectedMonth('');
+                                }}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all uppercase tracking-wider
+                                    ${timeframe === t
+                                        ? 'bg-brand-brown text-white shadow-md'
+                                        : 'text-brand-brown/60 hover:text-brand-brown hover:bg-white/50'}`}
+                            >
+                                {t === 'daily' ? 'Día' : t === 'weekly' ? 'Semana' : 'Mes'}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Date Pickers */}
+                    <div className="flex bg-white/50 rounded-lg p-1 items-center gap-2 h-full">
+                        {timeframe === 'daily' && (
+                            <input 
+                                type="date" 
+                                value={selectedDate} 
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                className="px-2 py-1.5 rounded-lg bg-white text-sm text-brand-brown border border-brand-brown/10 focus:outline-none focus:ring-1 focus:ring-brand-accent/50 max-w-[140px]" 
+                                title="Seleccionar día específico"
+                            />
+                        )}
+                        {timeframe === 'weekly' && (
+                            <input 
+                                type="week" 
+                                value={selectedWeek} 
+                                onChange={(e) => setSelectedWeek(e.target.value)}
+                                className="px-2 py-1.5 rounded-lg bg-white text-sm text-brand-brown border border-brand-brown/10 focus:outline-none focus:ring-1 focus:ring-brand-accent/50 max-w-[150px]" 
+                                title="Seleccionar semana específica"
+                            />
+                        )}
+                        {timeframe === 'monthly' && (
+                            <input 
+                                type="month" 
+                                value={selectedMonth} 
+                                onChange={(e) => setSelectedMonth(e.target.value)}
+                                className="px-2 py-1.5 rounded-lg bg-white text-sm text-brand-brown border border-brand-brown/10 focus:outline-none focus:ring-1 focus:ring-brand-accent/50 max-w-[140px]" 
+                                title="Seleccionar mes específico"
+                            />
+                        )}
+                        {isFiltered && (
+                            <button 
+                                onClick={() => { setSelectedDate(''); setSelectedWeek(''); setSelectedMonth(''); }}
+                                className="text-xs text-brand-brown/60 bg-white hover:text-red-500 hover:bg-red-50 border border-brand-brown/10 font-bold px-2 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1"
+                                title="Mostrar todo (deshacer filtro)"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+
+                    <button 
+                        onClick={generateReportPDF}
+                        title="Exportar Detalle PDF (A4)"
+                        className="p-2 ml-1 md:ml-2 bg-brand-accent/20 text-brand-accent hover:bg-brand-accent hover:text-white rounded-lg transition-colors flex items-center justify-center font-bold"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </button>
                 </div>
             </header>
 
@@ -202,36 +434,42 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
             </div>
 
             {/* Visualización Simple */}
-            <div className="bg-brand-cream rounded-2xl shadow-sm border border-[#E5DCD3] p-6 lg:p-8">
-                <h3 className="text-xl font-serif font-bold text-brand-brown mb-6 flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                        <span className="text-2xl">📊</span>
-                        Resumen de Ingresos
-                    </span>
-                    <span className="text-xs uppercase tracking-widest text-[#D4A373] bg-[#D4A373]/10 px-3 py-1 rounded-full border border-[#D4A373]/20">
-                        {timeframe === 'daily' ? 'Vista Diaria' : timeframe === 'weekly' ? 'Vista Semanal' : 'Vista Mensual'}
-                    </span>
-                </h3>
-                <div className="space-y-4">
-                    {sortedData.slice(timeframe === 'daily' ? -10 : timeframe === 'weekly' ? -8 : -12).map(day => (
-                        <div key={day.date} className="flex flex-col gap-1">
-                            <div className="flex justify-between text-sm font-bold text-brand-brown">
-                                <span className="capitalize">{day.date}</span>
-                                <span>${day.ingresos.toLocaleString()}</span>
-                            </div>
-                            <div className="w-full bg-white rounded-full h-3 border border-stone-100 overflow-hidden">
-                                <div
-                                    className="bg-brand-accent h-full transition-all duration-700 ease-out"
-                                    style={{ width: `${(day.ingresos / maxVal) * 100}%` }}
-                                ></div>
-                            </div>
-                        </div>
-                    ))}
-                    <p className="text-xs text-stone-400 italic text-center mt-4 uppercase tracking-tighter">
-                        Mostrando histórico por {timeframe === 'daily' ? 'día' : timeframe === 'weekly' ? 'semana' : 'mes'}
-                    </p>
+            {filteredOrders.length === 0 && isFiltered ? (
+                <div className="bg-brand-cream rounded-2xl shadow-sm border border-[#E5DCD3] p-6 lg:p-8 text-center text-brand-brown/60 font-serif italic">
+                    No hay ventas registradas para el periodo seleccionado.
                 </div>
-            </div>
+            ) : (
+                <div className="bg-brand-cream rounded-2xl shadow-sm border border-[#E5DCD3] p-6 lg:p-8">
+                    <h3 className="text-xl font-serif font-bold text-brand-brown mb-6 flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                            <span className="text-2xl">📊</span>
+                            {isFiltered ? 'Resumen del Periodo' : 'Tendencia de Ingresos'}
+                        </span>
+                        <span className="text-xs uppercase tracking-widest text-[#D4A373] bg-[#D4A373]/10 px-3 py-1 rounded-full border border-[#D4A373]/20">
+                            {groupingMode === 'daily' ? 'Vista Diaria' : groupingMode === 'weekly' ? 'Vista Semanal' : 'Vista Mensual'}
+                        </span>
+                    </h3>
+                    <div className="space-y-4">
+                        {sortedData.slice(groupingMode === 'daily' ? -15 : groupingMode === 'weekly' ? -8 : -12).map(day => (
+                            <div key={day.date} className="flex flex-col gap-1">
+                                <div className="flex justify-between text-sm font-bold text-brand-brown">
+                                    <span className="capitalize">{day.date}</span>
+                                    <span>${day.ingresos.toLocaleString()}</span>
+                                </div>
+                                <div className="w-full bg-white rounded-full h-3 border border-stone-100 overflow-hidden">
+                                    <div
+                                        className="bg-brand-accent h-full transition-all duration-700 ease-out"
+                                        style={{ width: `${(day.ingresos / maxVal) * 100}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        ))}
+                        <p className="text-xs text-stone-400 italic text-center mt-4 uppercase tracking-tighter">
+                            Mostrando histórico por {groupingMode === 'daily' ? 'día' : groupingMode === 'weekly' ? 'semana' : 'mes'} {isFiltered ? '(Filtrado)' : ''}
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Detailed Table */}
             <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">

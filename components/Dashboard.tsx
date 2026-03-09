@@ -51,8 +51,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, onEditOrder, onViewOrder,
         return order.items.reduce((sum, item: any) => {
             const recipe = recipes.find(r => r.id === item.recipeId);
             if (recipe) {
-                // Real cost from recipe
-                return sum + (item.amount * recipe.costPerGram * item.quantity);
+                if (recipe.isPromo) {
+                    return sum + (recipe.totalCost * item.quantity);
+                } else {
+                    return sum + (item.amount * recipe.costPerGram * item.quantity);
+                }
             }
             // Fallback for items not linked to a recipe (estimate 1/3 of price)
             return sum + (item.price * item.quantity / 3);

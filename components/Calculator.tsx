@@ -133,9 +133,11 @@ const Calculator: React.FC<Props> = ({ userId }) => {
 
           // Portion Info
           const portionWeight = selectedRecipe.portionWeight || 0;
-          const portionText = portionWeight > 0
-            ? `PORCIÓN: ${portionWeight}G`
-            : `PORCIÓN: ${weight}G`; // Fallback if no portion weight set
+          const portionText = selectedRecipe.isPromo 
+            ? `PROMOCIÓN` 
+            : (portionWeight > 0
+              ? `PORCIÓN: ${portionWeight}G`
+              : `PORCIÓN: ${weight}G`);
 
           centerText(portionText, currentY, 10, "bold");
           currentY += 2;
@@ -156,23 +158,22 @@ const Calculator: React.FC<Props> = ({ userId }) => {
           currentY += 5;
 
           // Nutrients Data Calculation
-          // If portionWeight is defined and totalYieldWeight > 0, we calculate per portion.
-          // Otherwise fall back to displaying raw values (though user is instructed to input totals now).
-
           let factor = 0;
-          if (portionWeight > 0 && selectedRecipe.totalYieldWeight > 0) {
+          if (selectedRecipe.isPromo) {
+            factor = 1; // Para promos, los nutrientes ya son el valor total calculado
+          } else if (portionWeight > 0 && selectedRecipe.totalYieldWeight > 0) {
             factor = portionWeight / selectedRecipe.totalYieldWeight;
+          } else if (weight > 0 && selectedRecipe.totalYieldWeight > 0) {
+            factor = weight / selectedRecipe.totalYieldWeight;
           }
 
           const calcValue = (val: number | undefined) => {
             if (!val) return "0";
+            if (selectedRecipe.isPromo) return Math.round(val).toString();
             if (factor > 0) {
               return Math.round(val * factor).toString();
             }
-            // Fallback if no yield/portion set: return value as is (maybe user entered per portion?)
-            // But we shifted to Total input, so this might specific case.
-            // Let's assume valid data for now or return 0 if invalid.
-            return "0";
+            return Math.round(val).toString();
           };
 
           const nutrients = [
@@ -242,12 +243,21 @@ const Calculator: React.FC<Props> = ({ userId }) => {
 
           if (!isReseller) {
             // NET WEIGHT BOX
-            doc.setLineWidth(1); // Thicker border
-            doc.rect(5, currentY, 70, 10);
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "bold");
-            doc.text(`NETO: ${weight}G`, 40, currentY + 7, { align: "center" });
-            currentY += 15;
+            if (selectedRecipe.isPromo) {
+              doc.setLineWidth(1);
+              doc.rect(5, currentY, 70, 10);
+              doc.setFontSize(11);
+              doc.setFont("helvetica", "bold");
+              doc.text(`CANTIDAD: ${weight} UN`, 40, currentY + 7, { align: "center" });
+              currentY += 15;
+            } else {
+              doc.setLineWidth(1);
+              doc.rect(5, currentY, 70, 10);
+              doc.setFontSize(12);
+              doc.setFont("helvetica", "bold");
+              doc.text(`NETO: ${weight}G`, 40, currentY + 7, { align: "center" });
+              currentY += 15;
+            }
           }
 
           // SIN AZUCAR BOX
@@ -258,6 +268,18 @@ const Calculator: React.FC<Props> = ({ userId }) => {
           doc.text("SIN AZÚCAR", 40, currentY + 7, { align: "center" });
           currentY += 15;
 
+          if (selectedRecipe.isPromo && selectedRecipe.promoItems && selectedRecipe.promoItems.length > 0) {
+            const promoItemsText = "INCLUYE: " + selectedRecipe.promoItems.map(pi => {
+              const r = recipes.find(rec => rec.id === pi.recipeId);
+              return r ? `${pi.quantityUsed}x ${r.name}` : '';
+            }).filter(n => n).join(', ').toUpperCase();
+             
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "bold");
+            const promoLines = doc.splitTextToSize(promoItemsText, 70);
+            doc.text(promoLines, 5, currentY);
+            currentY += (promoLines.length * 4) + 2;
+          }
 
           // Footer / Social
           // Instagram Icon & Handle
@@ -436,11 +458,11 @@ const Calculator: React.FC<Props> = ({ userId }) => {
 
           {/* Info Card */}
           <div className="bg-white p-4 rounded-xl shadow-sm border border-brand-brown/10">
-            <h4 className="font-bold text-brand-brown mb-2 font-serif">Detalles de la Receta</h4>
+            <h4 className="font-bold text-brand-brown mb-2 font-serif">{selectedRecipe?.isPromo ? 'Detalles de la Promoción' : 'Detalles de la Receta'}</h4>
             <div className="text-sm text-brand-brown/80 grid grid-cols-2 gap-2">
-              <div>Yield Total: <span className="font-medium">{selectedRecipe?.totalYieldWeight}</span></div>
-              <div>Costo Total: <span className="font-medium">${selectedRecipe?.totalCost.toFixed(2)}</span></div>
-              <div className="col-span-2">Costo Base: <span className="font-medium">${selectedRecipe?.costPerGram.toFixed(4)} / gr</span></div>
+              {!selectedRecipe?.isPromo && <div>Yield Total: <span className="font-medium">{selectedRecipe?.totalYieldWeight}</span></div>}
+              <div className={selectedRecipe?.isPromo ? 'col-span-2' : ''}>Costo Total: <span className="font-medium">${selectedRecipe?.totalCost.toFixed(2)}</span></div>
+              {!selectedRecipe?.isPromo && <div className="col-span-2">Costo Base: <span className="font-medium">${selectedRecipe?.costPerGram.toFixed(4)} / gr</span></div>}
             </div>
           </div>
 

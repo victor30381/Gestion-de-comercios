@@ -40,6 +40,14 @@ export interface Recipe {
   nutritionalInfo?: NutritionalInfo; // VALORES TOTALES DE LA RECETA
   portionWeight?: number; // Peso de una porción en gramos
   conservation?: string; // e.g. "Heladera: 7 días"
+  isPromo?: boolean;
+  promoItems?: PromoItem[];
+}
+
+export interface PromoItem {
+  recipeId: string;
+  quantityUsed: number; // amount of the recipe used
+  calculatedCost: number;
 }
 
 // Helper to convert units for display/calculation

@@ -12,6 +12,11 @@ interface LocalRecipeIngredient {
   quantityUsed: string;
 }
 
+interface LocalPromoItem {
+  recipeId: string;
+  quantityUsed: string;
+}
+
 const Recipes: React.FC<Props> = ({ userId }) => {
   // Data States
   const [availableIngredients, setAvailableIngredients] = useState<Ingredient[]>([]);
@@ -20,6 +25,8 @@ const Recipes: React.FC<Props> = ({ userId }) => {
   // Form States
   const [recipeName, setRecipeName] = useState('');
   const [ingredientsList, setIngredientsList] = useState<LocalRecipeIngredient[]>([]);
+  const [promoItemsList, setPromoItemsList] = useState<LocalPromoItem[]>([]);
+  const [isPromoMode, setIsPromoMode] = useState(false);
   const [totalYield, setTotalYield] = useState('');
   // Nutritional Info State
   const [calories, setCalories] = useState('');
@@ -82,16 +89,42 @@ const Recipes: React.FC<Props> = ({ userId }) => {
     setIngredientsList(newList);
   };
 
+  const addPromoItemRow = () => {
+    setPromoItemsList([...promoItemsList, { recipeId: '', quantityUsed: '' }]);
+  };
+
+  const removePromoItemRow = (index: number) => {
+    const newList = [...promoItemsList];
+    newList.splice(index, 1);
+    setPromoItemsList(newList);
+  };
+
+  const handlePromoRowChange = (index: number, field: keyof LocalPromoItem, value: string) => {
+    const newList = [...promoItemsList];
+    newList[index] = { ...newList[index], [field]: value };
+    setPromoItemsList(newList);
+  };
+
   const calculateTotalCost = () => {
     let total = 0;
-    ingredientsList.forEach(item => {
-      const ing = availableIngredients.find(i => i.id === item.ingredientId);
-      const qty = parseFloat(item.quantityUsed);
-      if (ing && !isNaN(qty)) {
-        const factor = getConversionFactor(ing.unit);
-        total += (ing.pricePerUnit / factor) * qty;
-      }
-    });
+    if (isPromoMode) {
+      promoItemsList.forEach(item => {
+        const recipe = savedRecipes.find(r => r.id === item.recipeId);
+        const qty = parseFloat(item.quantityUsed);
+        if (recipe && !isNaN(qty)) {
+          total += recipe.costPerGram * qty;
+        }
+      });
+    } else {
+      ingredientsList.forEach(item => {
+        const ing = availableIngredients.find(i => i.id === item.ingredientId);
+        const qty = parseFloat(item.quantityUsed);
+        if (ing && !isNaN(qty)) {
+          const factor = getConversionFactor(ing.unit);
+          total += (ing.pricePerUnit / factor) * qty;
+        }
+      });
+    }
     return total;
   };
 
@@ -100,16 +133,24 @@ const Recipes: React.FC<Props> = ({ userId }) => {
     setSuccessMsg('');
     setErrorMsg('');
 
-    const yieldWeight = parseFloat(totalYield);
-    if (!recipeName || ingredientsList.length === 0 || isNaN(yieldWeight) || yieldWeight <= 0) {
+    const yieldWeight = isPromoMode ? 1 : parseFloat(totalYield);
+    if (!recipeName || (!isPromoMode && (isNaN(yieldWeight) || yieldWeight <= 0))) {
       alert("Por favor complete todos los campos correctamente.");
+      return;
+    }
+    if (isPromoMode && promoItemsList.length === 0) {
+      alert("Agrega al menos una receta a la promoción.");
+      return;
+    }
+    if (!isPromoMode && ingredientsList.length === 0) {
+      alert("Agrega al menos un ingrediente a la receta.");
       return;
     }
 
     const totalCost = calculateTotalCost();
     const costPerGram = totalCost / yieldWeight;
 
-    const finalIngredients = ingredientsList.map(item => {
+    const finalIngredients = isPromoMode ? [] : ingredientsList.map(item => {
       const ing = availableIngredients.find(i => i.id === item.ingredientId)!;
       const qty = parseFloat(item.quantityUsed);
       const factor = getConversionFactor(ing.unit);
@@ -120,19 +161,47 @@ const Recipes: React.FC<Props> = ({ userId }) => {
       };
     });
 
+    const finalPromoItems = isPromoMode ? promoItemsList.map(item => {
+      const recipe = savedRecipes.find(r => r.id === item.recipeId)!;
+      const qty = parseFloat(item.quantityUsed);
+      return {
+        recipeId: item.recipeId,
+        quantityUsed: qty,
+        calculatedCost: recipe.costPerGram * qty
+      };
+    }) : [];
+
+    let autoCalories = 0, autoProtein = 0, autoCarbs = 0, autoFat = 0, autoFiber = 0;
+    if (isPromoMode) {
+      promoItemsList.forEach(item => {
+        const r = savedRecipes.find(rr => rr.id === item.recipeId);
+        const qty = parseFloat(item.quantityUsed);
+        if (r && r.nutritionalInfo && r.totalYieldWeight && !isNaN(qty) && r.totalYieldWeight > 0) {
+          const factor = qty / r.totalYieldWeight;
+          autoCalories += (r.nutritionalInfo.calories || 0) * factor;
+          autoProtein += (r.nutritionalInfo.protein || 0) * factor;
+          autoCarbs += (r.nutritionalInfo.carbs || 0) * factor;
+          autoFat += (r.nutritionalInfo.fat || 0) * factor;
+          autoFiber += (r.nutritionalInfo.fiber || 0) * factor;
+        }
+      });
+    }
+
     const recipeData: Omit<Recipe, 'id'> = {
       userId,
       name: recipeName,
       ingredients: finalIngredients,
+      isPromo: isPromoMode,
+      promoItems: finalPromoItems,
       totalYieldWeight: yieldWeight,
       totalCost,
       costPerGram,
       nutritionalInfo: {
-        calories: parseFloat(calories) || 0,
-        protein: parseFloat(protein) || 0,
-        carbs: parseFloat(carbs) || 0,
-        fat: parseFloat(fat) || 0,
-        fiber: parseFloat(fiber) || 0,
+        calories: isPromoMode ? autoCalories : (parseFloat(calories) || 0),
+        protein: isPromoMode ? autoProtein : (parseFloat(protein) || 0),
+        carbs: isPromoMode ? autoCarbs : (parseFloat(carbs) || 0),
+        fat: isPromoMode ? autoFat : (parseFloat(fat) || 0),
+        fiber: isPromoMode ? autoFiber : (parseFloat(fiber) || 0),
       },
       portionWeight: parseFloat(portionWeight) || 0,
       conservation
@@ -162,12 +231,24 @@ const Recipes: React.FC<Props> = ({ userId }) => {
     setRecipeName(recipe.name);
     setTotalYield(recipe.totalYieldWeight.toString());
 
-    // Transform ingredients back to local state
-    const localIngredients = recipe.ingredients.map(i => ({
-      ingredientId: i.ingredientId,
-      quantityUsed: i.quantityUsed.toString()
-    }));
-    setIngredientsList(localIngredients);
+    const isPromo = !!recipe.isPromo;
+    setIsPromoMode(isPromo);
+
+    if (isPromo) {
+      const localPromoItems = (recipe.promoItems || []).map(i => ({
+        recipeId: i.recipeId,
+        quantityUsed: i.quantityUsed.toString()
+      }));
+      setPromoItemsList(localPromoItems);
+      setIngredientsList([]);
+    } else {
+      const localIngredients = recipe.ingredients.map(i => ({
+        ingredientId: i.ingredientId,
+        quantityUsed: i.quantityUsed.toString()
+      }));
+      setIngredientsList(localIngredients);
+      setPromoItemsList([]);
+    }
 
     // Set nutritional info
     setCalories(recipe.nutritionalInfo?.calories.toString() || '');
@@ -210,6 +291,8 @@ const Recipes: React.FC<Props> = ({ userId }) => {
   const resetForm = () => {
     setRecipeName('');
     setIngredientsList([]);
+    setPromoItemsList([]);
+    setIsPromoMode(false);
     setTotalYield('');
     setCalories('');
     setProtein('');
@@ -239,9 +322,30 @@ const Recipes: React.FC<Props> = ({ userId }) => {
 
       {/* FORM SECTION */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-brand-brown/10">
-        <h2 className="text-xl font-bold text-brand-brown mb-4 font-serif">
-          {editingId ? 'Editar Receta' : 'Nueva Receta'}
-        </h2>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+          <h2 className="text-xl font-bold text-brand-brown font-serif">
+            {editingId ? (isPromoMode ? 'Editar Promoción' : 'Editar Receta') : (isPromoMode ? 'Nueva Promoción' : 'Nueva Receta')}
+          </h2>
+
+          {!editingId && (
+            <div className="flex bg-brand-brown/5 rounded-xl p-1 shadow-inner">
+              <button
+                type="button"
+                onClick={() => setIsPromoMode(false)}
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${!isPromoMode ? 'bg-white text-brand-brown shadow-sm' : 'text-brand-brown/60 hover:text-brand-brown'}`}
+              >
+                Receta
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPromoMode(true)}
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${isPromoMode ? 'bg-white text-brand-brown shadow-sm' : 'text-brand-brown/60 hover:text-brand-brown'}`}
+              >
+                Promoción
+              </button>
+            </div>
+          )}
+        </div>
 
         {errorMsg && (
           <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg mb-4 text-sm">
@@ -252,29 +356,86 @@ const Recipes: React.FC<Props> = ({ userId }) => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Name */}
           <div>
-            <label className="block text-sm font-bold text-brand-brown mb-1">Nombre de la Receta</label>
+            <label className="block text-sm font-bold text-brand-brown mb-1">{isPromoMode ? 'Nombre de la Promoción' : 'Nombre de la Receta'}</label>
             <input
               type="text"
               value={recipeName}
               onChange={(e) => setRecipeName(e.target.value)}
               className="w-full p-3 rounded-xl border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-brand-beige/50 placeholder-brand-brown/40"
-              placeholder="Ej. Torta de Chocolate Keto"
+              placeholder={isPromoMode ? "Ej. Promoción Día de la Madre" : "Ej. Torta de Chocolate Keto"}
               required
             />
           </div>
 
-          {/* Ingredients */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <label className="block text-sm font-bold text-brand-brown">Ingredientes</label>
-              <button
-                type="button"
-                onClick={addIngredientRow}
-                className="text-xs bg-brand-brown/10 text-brand-brown px-3 py-1 rounded-full font-bold hover:bg-brand-brown/20 transition-colors"
-              >
-                + Agregar
-              </button>
+          {/* Ingredients or Promo Items */}
+          {isPromoMode ? (
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <label className="block text-sm font-bold text-brand-brown">Recetas de la Promoción</label>
+                <button
+                  type="button"
+                  onClick={addPromoItemRow}
+                  className="text-xs bg-brand-brown/10 text-brand-brown px-3 py-1 rounded-full font-bold hover:bg-brand-brown/20 transition-colors"
+                >
+                  + Agregar
+                </button>
+              </div>
+
+              {promoItemsList.map((row, index) => (
+                <div key={index} className="flex gap-2 items-start">
+                  <div className="flex-grow space-y-2">
+                    <select
+                      value={row.recipeId}
+                      onChange={(e) => handlePromoRowChange(index, 'recipeId', e.target.value)}
+                      className="w-full p-2.5 rounded-xl border border-brand-brown/20 bg-brand-beige/50 text-sm text-brand-brown focus:ring-2 focus:ring-brand-accent/50 focus:outline-none"
+                      required
+                    >
+                      <option value="">Seleccionar receta...</option>
+                      {savedRecipes.filter(r => !r.isPromo && r.id !== editingId).map(r => (
+                        <option key={r.id} value={r.id}>{r.name}</option>
+                      ))}
+                    </select>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={row.quantityUsed}
+                        onChange={(e) => handlePromoRowChange(index, 'quantityUsed', e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-brand-brown/20 text-sm text-brand-brown bg-brand-beige/50 placeholder-brand-brown/40 focus:ring-2 focus:ring-brand-accent/50 focus:outline-none"
+                        placeholder="Cantidad a usar (gr/un)"
+                        required
+                      />
+                      <span className="absolute right-3 top-2.5 text-xs text-brand-brown/60">
+                        gr/un
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removePromoItemRow(index)}
+                    className="mt-1 p-2 text-red-400 hover:text-red-600 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+              {promoItemsList.length === 0 && (
+                <p className="text-sm text-brand-brown/40 italic text-center py-2 bg-brand-brown/5 rounded-lg">Agrega recetas a la promoción</p>
+              )}
             </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <label className="block text-sm font-bold text-brand-brown">Ingredientes</label>
+                <button
+                  type="button"
+                  onClick={addIngredientRow}
+                  className="text-xs bg-brand-brown/10 text-brand-brown px-3 py-1 rounded-full font-bold hover:bg-brand-brown/20 transition-colors"
+                >
+                  + Agregar
+                </button>
+              </div>
 
             {ingredientsList.map((row, index) => (
               <div key={index} className="flex gap-2 items-start">
@@ -319,109 +480,120 @@ const Recipes: React.FC<Props> = ({ userId }) => {
               <p className="text-sm text-brand-brown/40 italic text-center py-2 bg-brand-brown/5 rounded-lg">Agrega ingredientes a la lista</p>
             )}
           </div>
+          )}
 
           {/* Yield */}
-          <div className="bg-brand-brown/5 p-4 rounded-xl border border-brand-brown/10">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-bold text-brand-brown">Costo Ingredientes:</span>
+          {!isPromoMode && (
+            <div className="bg-brand-brown/5 p-4 rounded-xl border border-brand-brown/10">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-bold text-brand-brown">Costo Ingredientes:</span>
+                <span className="font-bold text-lg text-brand-brown">${currentTotal.toFixed(2)}</span>
+              </div>
+              <label className="block text-sm font-bold text-brand-brown mb-1">Peso Final de la Preparación (Yield)</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={totalYield}
+                  onChange={(e) => setTotalYield(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
+                  placeholder="Total en gramos o unidades"
+                  required={!isPromoMode}
+                />
+                <span className="absolute right-3 top-3.5 text-sm text-brand-brown/60">gr/un</span>
+              </div>
+            </div>
+          )}
+          {isPromoMode && (
+            <div className="bg-brand-brown/5 p-4 rounded-xl border border-brand-brown/10 flex justify-between items-center">
+              <span className="text-sm font-bold text-brand-brown">Costo Base de Promo:</span>
               <span className="font-bold text-lg text-brand-brown">${currentTotal.toFixed(2)}</span>
             </div>
-            <label className="block text-sm font-bold text-brand-brown mb-1">Peso Final de la Preparación (Yield)</label>
-            <div className="relative">
-              <input
-                type="number"
-                value={totalYield}
-                onChange={(e) => setTotalYield(e.target.value)}
-                className="w-full p-3 rounded-xl border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
-                placeholder="Total en gramos o unidades"
-                required
-              />
-              <span className="absolute right-3 top-3.5 text-sm text-brand-brown/60">gr/un</span>
-            </div>
-          </div>
+          )}
 
           {/* Nutritional Info Section */}
-          <div className="bg-brand-brown/5 p-4 rounded-xl border border-brand-brown/10">
-            <h3 className="text-md font-bold text-brand-brown mb-3 font-serif border-b border-brand-brown/10 pb-2">
-              Información Nutricional (TOTAL DE LA RECETA)
-            </h3>
+          {!isPromoMode && (
+            <div className="bg-brand-brown/5 p-4 rounded-xl border border-brand-brown/10">
+              <h3 className="text-md font-bold text-brand-brown mb-3 font-serif border-b border-brand-brown/10 pb-2">
+                Información Nutricional (TOTAL DE LA RECETA)
+              </h3>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-              <div>
-                <label className="block text-xs font-bold text-brand-brown mb-1">Calorías Totales (Kcal)</label>
-                <input
-                  type="number"
-                  value={calories}
-                  onChange={(e) => setCalories(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
-                  placeholder="0"
-                />
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-xs font-bold text-brand-brown mb-1">Calorías Totales (Kcal)</label>
+                  <input
+                    type="number"
+                    value={calories}
+                    onChange={(e) => setCalories(e.target.value)}
+                    className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-brand-brown mb-1">Grasas Totales (g)</label>
+                  <input
+                    type="number"
+                    value={fat}
+                    onChange={(e) => setFat(e.target.value)}
+                    className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-brand-brown mb-1">Carbos Totales (g)</label>
+                  <input
+                    type="number"
+                    value={carbs}
+                    onChange={(e) => setCarbs(e.target.value)}
+                    className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-brand-brown mb-1">Proteínas Totales (g)</label>
+                  <input
+                    type="number"
+                    value={protein}
+                    onChange={(e) => setProtein(e.target.value)}
+                    className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-brand-brown mb-1">Fibra Total (g)</label>
+                  <input
+                    type="number"
+                    value={fiber}
+                    onChange={(e) => setFiber(e.target.value)}
+                    className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
+                    placeholder="0"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-brand-brown mb-1">Grasas Totales (g)</label>
-                <input
-                  type="number"
-                  value={fat}
-                  onChange={(e) => setFat(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-brand-brown mb-1">Carbos Totales (g)</label>
-                <input
-                  type="number"
-                  value={carbs}
-                  onChange={(e) => setCarbs(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-brand-brown mb-1">Proteínas Totales (g)</label>
-                <input
-                  type="number"
-                  value={protein}
-                  onChange={(e) => setProtein(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-brand-brown mb-1">Fibra Total (g)</label>
-                <input
-                  type="number"
-                  value={fiber}
-                  onChange={(e) => setFiber(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
-                  placeholder="0"
-                />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-brand-brown mb-1">Peso de 1 Porción (g)</label>
+                  <input
+                    type="number"
+                    value={portionWeight}
+                    onChange={(e) => setPortionWeight(e.target.value)}
+                    className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
+                    placeholder="Ej. 60"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-brand-brown mb-1">Conservación</label>
+                  <input
+                    type="text"
+                    value={conservation}
+                    onChange={(e) => setConservation(e.target.value)}
+                    className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
+                    placeholder="Ej. Heladera: 7 días"
+                  />
+                </div>
               </div>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-brand-brown mb-1">Peso de 1 Porción (g)</label>
-                <input
-                  type="number"
-                  value={portionWeight}
-                  onChange={(e) => setPortionWeight(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
-                  placeholder="Ej. 60"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-brand-brown mb-1">Conservación</label>
-                <input
-                  type="text"
-                  value={conservation}
-                  onChange={(e) => setConservation(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
-                  placeholder="Ej. Heladera: 7 días"
-                />
-              </div>
-            </div>
-          </div>
+          )}
 
           <div className="flex gap-2">
             <button
@@ -460,23 +632,27 @@ const Recipes: React.FC<Props> = ({ userId }) => {
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-bold text-lg text-brand-brown leading-tight font-serif">{recipe.name}</h4>
                       <span className="bg-brand-brown/10 text-brand-brown text-xs font-bold px-2 py-1 rounded-lg">
-                        {recipe.ingredients.length} Ingred.
+                        {recipe.isPromo ? `${recipe.promoItems?.length || 0} Sub-recetas` : `${recipe.ingredients.length} Ingred.`}
                       </span>
                     </div>
 
                     <div className="space-y-1 text-sm text-brand-brown/70 mb-4">
-                      <p className="flex justify-between">
-                        <span>Rendimiento (Yield):</span>
-                        <span className="font-medium text-brand-brown">{recipe.totalYieldWeight} gr/un</span>
-                      </p>
+                      {!recipe.isPromo && (
+                        <p className="flex justify-between">
+                          <span>Rendimiento (Yield):</span>
+                          <span className="font-medium text-brand-brown">{recipe.totalYieldWeight} gr/un</span>
+                        </p>
+                      )}
                       <p className="flex justify-between">
                         <span>Costo Total:</span>
                         <span className="font-medium text-brand-brown">${recipe.totalCost.toFixed(2)}</span>
                       </p>
-                      <div className="pt-2 mt-2 border-t border-brand-brown/10 flex justify-between text-brand-brown font-bold">
-                        <span>Costo Base:</span>
-                        <span>${recipe.costPerGram.toFixed(4)} / gr</span>
-                      </div>
+                      {!recipe.isPromo && (
+                        <div className="pt-2 mt-2 border-t border-brand-brown/10 flex justify-between text-brand-brown font-bold">
+                          <span>Costo Base:</span>
+                          <span>${recipe.costPerGram.toFixed(4)} / gr</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -539,38 +715,56 @@ const Recipes: React.FC<Props> = ({ userId }) => {
             </h2>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className={`grid ${viewRecipe.isPromo ? 'grid-cols-1' : 'grid-cols-3'} gap-3 mb-6`}>
+              {!viewRecipe.isPromo && (
+                <div className="bg-brand-beige/30 p-3 rounded-xl border border-brand-brown/5 text-center">
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-brown/60 mb-1">Rendimiento</span>
+                  <span className="block font-bold text-brand-brown text-lg">{viewRecipe.totalYieldWeight} <span className="text-xs font-normal">g/un</span></span>
+                </div>
+              )}
               <div className="bg-brand-beige/30 p-3 rounded-xl border border-brand-brown/5 text-center">
-                <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-brown/60 mb-1">Rendimiento</span>
-                <span className="block font-bold text-brand-brown text-lg">{viewRecipe.totalYieldWeight} <span className="text-xs font-normal">g/un</span></span>
-              </div>
-              <div className="bg-brand-beige/30 p-3 rounded-xl border border-brand-brown/5 text-center">
-                <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-brown/60 mb-1">Costo Total</span>
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-brown/60 mb-1">Costo Total Promoción</span>
                 <span className="block font-bold text-brand-brown text-lg">${viewRecipe.totalCost.toFixed(0)}</span>
               </div>
-              <div className="bg-brand-beige/30 p-3 rounded-xl border border-brand-brown/5 text-center">
-                <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-brown/60 mb-1">Costo/g</span>
-                <span className="block font-bold text-brand-brown text-lg">${viewRecipe.costPerGram.toFixed(2)}</span>
-              </div>
+              {!viewRecipe.isPromo && (
+                <div className="bg-brand-beige/30 p-3 rounded-xl border border-brand-brown/5 text-center">
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-brown/60 mb-1">Costo/g</span>
+                  <span className="block font-bold text-brand-brown text-lg">${viewRecipe.costPerGram.toFixed(2)}</span>
+                </div>
+              )}
             </div>
 
             {/* Ingredients List */}
             <div className="mb-6">
               <h3 className="font-bold text-brand-brown mb-3 flex items-center gap-2 text-sm uppercase tracking-wide opacity-80 border-b border-brand-brown/10 pb-1">
-                Ingredientes
+                {viewRecipe.isPromo ? 'Recetas que la componen' : 'Ingredientes'}
               </h3>
               <div className="space-y-2 bg-brand-brown/5 p-4 rounded-xl">
-                {viewRecipe.ingredients.map((ing, idx) => {
-                  const fullIng = availableIngredients.find(i => i.id === ing.ingredientId);
-                  return (
-                    <div key={idx} className="flex justify-between items-center text-sm border-b border-dashed border-brand-brown/10 last:border-0 pb-2 last:pb-0 mb-2 last:mb-0">
-                      <span className="font-medium text-brand-brown">{fullIng?.name || 'Ingrediente eliminado'}</span>
-                      <div className="text-right flex flex-col items-end">
-                        <span className="font-bold text-brand-brown">{ing.quantityUsed} <span className="text-xs font-normal opacity-70">{fullIng?.unit || 'un'}</span></span>
+                {viewRecipe.isPromo ? (
+                  viewRecipe.promoItems?.map((pItem, idx) => {
+                    const fullRecipe = savedRecipes.find(r => r.id === pItem.recipeId);
+                    return (
+                      <div key={idx} className="flex justify-between items-center text-sm border-b border-dashed border-brand-brown/10 last:border-0 pb-2 last:pb-0 mb-2 last:mb-0">
+                        <span className="font-medium text-brand-brown">{fullRecipe?.name || 'Receta eliminada'}</span>
+                        <div className="text-right flex flex-col items-end">
+                          <span className="font-bold text-brand-brown">{pItem.quantityUsed} <span className="text-xs font-normal opacity-70">gr/un</span></span>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                ) : (
+                  viewRecipe.ingredients.map((ing, idx) => {
+                    const fullIng = availableIngredients.find(i => i.id === ing.ingredientId);
+                    return (
+                      <div key={idx} className="flex justify-between items-center text-sm border-b border-dashed border-brand-brown/10 last:border-0 pb-2 last:pb-0 mb-2 last:mb-0">
+                        <span className="font-medium text-brand-brown">{fullIng?.name || 'Ingrediente eliminado'}</span>
+                        <div className="text-right flex flex-col items-end">
+                          <span className="font-bold text-brand-brown">{ing.quantityUsed} <span className="text-xs font-normal opacity-70">{fullIng?.unit || 'un'}</span></span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
 
