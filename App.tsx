@@ -7,7 +7,8 @@ import FinancesView from './components/FinancesView';
 import CalculatorModal from './components/CalculatorModal';
 import OrdersModal from './components/OrdersModal';
 import StockModal from './components/StockModal';
-
+import { ThemeProvider } from './components/ThemeContext';
+import ProfileView from './components/ProfileView';
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,8 +89,8 @@ function App() {
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-brand-beige">
         <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 border border-[#E5DCD3]">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-serif font-bold text-brand-brown mb-2">Alternativa Keto</h1>
-            <p className="text-stone-500">Gestiona tu pastelería keto con estilo.</p>
+            <h1 className="text-4xl font-serif font-bold text-brand-brown mb-2">{localStorage.getItem('savedCompanyName') || 'Alternativa Keto'}</h1>
+            <p className="text-stone-500">Gestiona tu comercio con estilo.</p>
           </div>
 
           <form onSubmit={handleAuth} className="space-y-5">
@@ -138,7 +139,7 @@ function App() {
 
   // MAIN APP
   return (
-    <>
+    <ThemeProvider userId={user.uid}>
       <Layout
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -150,6 +151,7 @@ function App() {
       >
         {activeTab === 'dashboard' && <Dashboard userId={user?.uid || ''} onEditOrder={handleEditOrder} onViewOrder={handleViewOrder} onNewOrderWithDate={handleNewOrderWithDate} />}
         {activeTab === 'finances' && <FinancesView userId={user?.uid || ''} />}
+        {activeTab === 'profile' && <ProfileView user={user} />}
         {/* Helper logic to keep other tabs valid if needed, though mostly using modals now */}
       </Layout>
 
@@ -178,7 +180,7 @@ function App() {
         onClose={() => setIsStockModalOpen(false)}
         userId={user.uid}
       />
-    </>
+    </ThemeProvider>
   );
 }
 

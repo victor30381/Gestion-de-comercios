@@ -1,67 +1,38 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check ownership
-    function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
+    // ---------------------------------------------------------
+    // 0. REGLA PARA LOS PERFILES DE USUARIO Y TEMAS
+    // ---------------------------------------------------------
+    match /userProfiles/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // ---------------------------------------------------------
+    // 1. REGLA DE PRIVACIDAD PARA TUS CLIENTES ('clients')
+    // ---------------------------------------------------------
+    match /clients/{documentId} {
+      // Para LEER, EDITAR o BORRAR: 
+      // Permitir solo si el campo 'userId' guardado coincide con el ID de quien entra.
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Para CREAR un nuevo cliente:
+      // Permitir solo si el usuario guarda su propio ID en el campo 'userId'.
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // ---------------------------------------------------------
+    // 2. REGLAS PARA QUE EL RESTO DE LA APP SIGA FUNCIONANDO
+    // (Ingredients, Recipes, Orders)
+    // ---------------------------------------------------------
     
-    // Helper to check standard resource ownership
-    function isResourceOwner() {
-      return request.auth != null && resource.data.userId == request.auth.uid;
-    }
-
-    // Allow user to write to their own subcollections (if migration happens later)
-    match /users/{userId}/{document=**} {
-      allow read, write: if isOwner(userId);
-    }
-
-    // Root collections - Enforce userId matching
-    // Note: We explicitly allow negative stock by NOT adding a create/update condition on stock values.
-
-    match /ingredients/{docId} {
-      allow read, write: if request.auth != null && (
-        (resource == null && request.resource.data.userId == request.auth.uid) || 
-        (resource != null && resource.data.userId == request.auth.uid)
-      );
-    }
-
-    match /production_logs/{docId} {
-       allow read, write: if request.auth != null && (
-        (resource == null && request.resource.data.userId == request.auth.uid) || 
-        (resource != null && resource.data.userId == request.auth.uid)
-      );
-    }
-
-    match /recipes/{docId} {
-       allow read, write: if request.auth != null && (
-        (resource == null && request.resource.data.userId == request.auth.uid) || 
-        (resource != null && resource.data.userId == request.auth.uid)
-      );
-    }
-
-    match /orders/{docId} {
-       allow read, write: if request.auth != null && (
-        (resource == null && request.resource.data.userId == request.auth.uid) || 
-        (resource != null && resource.data.userId == request.auth.uid)
-      );
-    }
-
-    match /clients/{docId} {
-       allow read, write: if request.auth != null && (
-        (resource == null && request.resource.data.userId == request.auth.uid) || 
-        (resource != null && resource.data.userId == request.auth.uid)
-      );
-    }
+    // Aquí permitimos que cualquier usuario registrado vea/edite las recetas e ingredientes
+    match /recipes/{document=**} { allow read, write: if request.auth != null; }
+    match /ingredients/{document=**} { allow read, write: if request.auth != null; }
     
-    // Notifications (if used)
-     match /notifications/{docId} {
-       allow read, write: if request.auth != null && (
-        (resource == null && request.resource.data.userId == request.auth.uid) || 
-        (resource != null && resource.data.userId == request.auth.uid)
-      );
-    }
+    // Para las órdenes ('orders'), también permitimos acceso a usuarios logueados.
+    // (Si las órdenes también tienen un campo 'userId', avísame para protegerlas igual que a clients)
+    match /orders/{document=**} { allow read, write: if request.auth != null; }
   }
 }

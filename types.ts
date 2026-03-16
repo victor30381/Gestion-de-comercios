@@ -105,3 +105,22 @@ export interface ProductionLog {
   quantityProduced: number; // in grams
   date: any; // Firestore Timestamp
 }
+
+export interface ThemeColors {
+  primary: string;
+  secondary: string;
+  accent: string;
+  background1: string;
+  background2: string;
+  textMain: string;
+  textMuted: string;
+}
+
+export interface UserProfile {
+  userId: string;
+  displayName: string;
+  companyName: string;
+  instagram: string;
+  facebook: string;
+  themeColors?: ThemeColors;
+}
