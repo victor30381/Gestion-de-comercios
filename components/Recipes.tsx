@@ -9,6 +9,7 @@ interface Props {
 
 interface LocalRecipeIngredient {
   ingredientId: string;
+  type?: 'ingredient' | 'recipe';
   quantityUsed: string;
 }
 
@@ -27,6 +28,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
   const [ingredientsList, setIngredientsList] = useState<LocalRecipeIngredient[]>([]);
   const [promoItemsList, setPromoItemsList] = useState<LocalPromoItem[]>([]);
   const [isPromoMode, setIsPromoMode] = useState(false);
+  const [isIngredientRecipe, setIsIngredientRecipe] = useState(false);
   const [totalYield, setTotalYield] = useState('');
   // Nutritional Info State
   const [calories, setCalories] = useState('');
@@ -74,7 +76,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
   }, [userId]);
 
   const addIngredientRow = () => {
-    setIngredientsList([...ingredientsList, { ingredientId: '', quantityUsed: '' }]);
+    setIngredientsList([...ingredientsList, { ingredientId: '', type: 'ingredient', quantityUsed: '' }]);
   };
 
   const removeIngredientRow = (index: number) => {
@@ -117,11 +119,19 @@ const Recipes: React.FC<Props> = ({ userId }) => {
       });
     } else {
       ingredientsList.forEach(item => {
-        const ing = availableIngredients.find(i => i.id === item.ingredientId);
-        const qty = parseFloat(item.quantityUsed);
-        if (ing && !isNaN(qty)) {
-          const factor = getConversionFactor(ing.unit);
-          total += (ing.pricePerUnit / factor) * qty;
+        if (item.type === 'recipe') {
+          const recipe = savedRecipes.find(r => r.id === item.ingredientId);
+          const qty = parseFloat(item.quantityUsed);
+          if (recipe && !isNaN(qty)) {
+            total += recipe.costPerGram * qty;
+          }
+        } else {
+          const ing = availableIngredients.find(i => i.id === item.ingredientId);
+          const qty = parseFloat(item.quantityUsed);
+          if (ing && !isNaN(qty)) {
+            const factor = getConversionFactor(ing.unit);
+            total += (ing.pricePerUnit / factor) * qty;
+          }
         }
       });
     }
@@ -151,14 +161,26 @@ const Recipes: React.FC<Props> = ({ userId }) => {
     const costPerGram = totalCost / yieldWeight;
 
     const finalIngredients = isPromoMode ? [] : ingredientsList.map(item => {
-      const ing = availableIngredients.find(i => i.id === item.ingredientId)!;
-      const qty = parseFloat(item.quantityUsed);
-      const factor = getConversionFactor(ing.unit);
-      return {
-        ingredientId: item.ingredientId,
-        quantityUsed: qty,
-        calculatedCost: (ing.pricePerUnit / factor) * qty
-      };
+      if (item.type === 'recipe') {
+        const recipe = savedRecipes.find(r => r.id === item.ingredientId)!;
+        const qty = parseFloat(item.quantityUsed);
+        return {
+          ingredientId: item.ingredientId,
+          type: 'recipe' as const,
+          quantityUsed: qty,
+          calculatedCost: recipe.costPerGram * qty
+        };
+      } else {
+        const ing = availableIngredients.find(i => i.id === item.ingredientId)!;
+        const qty = parseFloat(item.quantityUsed);
+        const factor = getConversionFactor(ing.unit);
+        return {
+          ingredientId: item.ingredientId,
+          type: 'ingredient' as const,
+          quantityUsed: qty,
+          calculatedCost: (ing.pricePerUnit / factor) * qty
+        };
+      }
     });
 
     const finalPromoItems = isPromoMode ? promoItemsList.map(item => {
@@ -192,6 +214,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
       name: recipeName,
       ingredients: finalIngredients,
       isPromo: isPromoMode,
+      isIngredient: isIngredientRecipe,
       promoItems: finalPromoItems,
       totalYieldWeight: yieldWeight,
       totalCost,
@@ -244,11 +267,14 @@ const Recipes: React.FC<Props> = ({ userId }) => {
     } else {
       const localIngredients = recipe.ingredients.map(i => ({
         ingredientId: i.ingredientId,
+        type: i.type || 'ingredient',
         quantityUsed: i.quantityUsed.toString()
       }));
       setIngredientsList(localIngredients);
       setPromoItemsList([]);
     }
+
+    setIsIngredientRecipe(!!recipe.isIngredient);
 
     // Set nutritional info
     setCalories(recipe.nutritionalInfo?.calories.toString() || '');
@@ -293,6 +319,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
     setIngredientsList([]);
     setPromoItemsList([]);
     setIsPromoMode(false);
+    setIsIngredientRecipe(false);
     setTotalYield('');
     setCalories('');
     setProtein('');
@@ -305,7 +332,11 @@ const Recipes: React.FC<Props> = ({ userId }) => {
     setErrorMsg('');
   };
 
-  const getIngredientUnitLabel = (id: string) => {
+  const getIngredientUnitLabel = (id: string, type?: 'ingredient' | 'recipe') => {
+    if (type === 'recipe') {
+      const recipe = savedRecipes.find(r => r.id === id);
+      return recipe?.portionWeight ? 'porción' : 'gr';
+    }
     const ing = availableIngredients.find(i => i.id === id);
     if (!ing) return 'cant';
     switch (ing.unit) {
@@ -366,6 +397,22 @@ const Recipes: React.FC<Props> = ({ userId }) => {
               required
             />
           </div>
+
+          {/* Is Ingredient Checkbox */}
+          {!isPromoMode && (
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="isIngredientRecipe"
+                checked={isIngredientRecipe}
+                onChange={(e) => setIsIngredientRecipe(e.target.checked)}
+                className="w-4 h-4 text-brand-accent rounded focus:ring-brand-accent/50 border-brand-brown/20"
+              />
+              <label htmlFor="isIngredientRecipe" className="text-sm font-bold text-brand-brown">
+                Esta receta puede usarse como ingrediente en otras recetas
+              </label>
+            </div>
+          )}
 
           {/* Ingredients or Promo Items */}
           {isPromoMode ? (
@@ -441,15 +488,37 @@ const Recipes: React.FC<Props> = ({ userId }) => {
               <div key={index} className="flex gap-2 items-start">
                 <div className="flex-grow space-y-2">
                   <select
-                    value={row.ingredientId}
-                    onChange={(e) => handleRowChange(index, 'ingredientId', e.target.value)}
+                    value={row.ingredientId ? `${row.type || 'ingredient'}-${row.ingredientId}` : ''}
+                    onChange={(e) => {
+                       const val = e.target.value;
+                       if (!val) {
+                         const newList = [...ingredientsList];
+                         newList[index] = { ...newList[index], ingredientId: '', type: 'ingredient' };
+                         setIngredientsList(newList);
+                         return;
+                       }
+                       const [type, ...idParts] = val.split('-');
+                       const id = idParts.join('-');
+                       const newList = [...ingredientsList];
+                       newList[index] = { ...newList[index], ingredientId: id, type: type as 'ingredient' | 'recipe' };
+                       setIngredientsList(newList);
+                    }}
                     className="w-full p-2.5 rounded-xl border border-brand-brown/20 bg-brand-beige/50 text-sm text-brand-brown focus:ring-2 focus:ring-brand-accent/50 focus:outline-none"
                     required
                   >
                     <option value="">Seleccionar ingrediente...</option>
-                    {availableIngredients.map(ing => (
-                      <option key={ing.id} value={ing.id}>{ing.name}</option>
-                    ))}
+                    <optgroup label="Ingredientes Base">
+                      {availableIngredients.map(ing => (
+                        <option key={ing.id} value={`ingredient-${ing.id}`}>{ing.name}</option>
+                      ))}
+                    </optgroup>
+                    {savedRecipes.filter(r => r.isIngredient && r.id !== editingId).length > 0 && (
+                      <optgroup label="Sub-recetas">
+                        {savedRecipes.filter(r => r.isIngredient && r.id !== editingId).map(r => (
+                          <option key={r.id} value={`recipe-${r.id}`}>{r.name} (${r.costPerGram.toFixed(4)}/gr)</option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                   <div className="relative">
                     <input
@@ -461,7 +530,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
                       required
                     />
                     <span className="absolute right-3 top-2.5 text-xs text-brand-brown/60">
-                      {row.ingredientId ? getIngredientUnitLabel(row.ingredientId) : '-'}
+                      {row.ingredientId ? getIngredientUnitLabel(row.ingredientId, row.type) : '-'}
                     </span>
                   </div>
                 </div>
@@ -754,12 +823,26 @@ const Recipes: React.FC<Props> = ({ userId }) => {
                   })
                 ) : (
                   viewRecipe.ingredients.map((ing, idx) => {
-                    const fullIng = availableIngredients.find(i => i.id === ing.ingredientId);
+                    let name = 'Eliminado';
+                    let unit = 'un';
+                    if (ing.type === 'recipe') {
+                      const recipe = savedRecipes.find(r => r.id === ing.ingredientId);
+                      if (recipe) {
+                        name = `${recipe.name} (Receta)`;
+                        unit = recipe.portionWeight ? 'porción' : 'gr';
+                      }
+                    } else {
+                      const fullIng = availableIngredients.find(i => i.id === ing.ingredientId);
+                      if (fullIng) {
+                        name = fullIng.name;
+                        unit = fullIng.unit;
+                      }
+                    }
                     return (
                       <div key={idx} className="flex justify-between items-center text-sm border-b border-dashed border-brand-brown/10 last:border-0 pb-2 last:pb-0 mb-2 last:mb-0">
-                        <span className="font-medium text-brand-brown">{fullIng?.name || 'Ingrediente eliminado'}</span>
+                        <span className="font-medium text-brand-brown">{name}</span>
                         <div className="text-right flex flex-col items-end">
-                          <span className="font-bold text-brand-brown">{ing.quantityUsed} <span className="text-xs font-normal opacity-70">{fullIng?.unit || 'un'}</span></span>
+                          <span className="font-bold text-brand-brown">{ing.quantityUsed} <span className="text-xs font-normal opacity-70">{unit}</span></span>
                         </div>
                       </div>
                     );

@@ -17,6 +17,7 @@ export interface Ingredient {
 
 export interface RecipeIngredient {
   ingredientId: string;
+  type?: 'ingredient' | 'recipe'; // 'ingredient' for standard ingredients, 'recipe' for sub-recipes
   quantityUsed: number; // In grams if KG/LT, or units if UN
   calculatedCost: number;
 }
@@ -42,6 +43,7 @@ export interface Recipe {
   conservation?: string; // e.g. "Heladera: 7 días"
   isPromo?: boolean;
   promoItems?: PromoItem[];
+  isIngredient?: boolean; // Can this recipe be used as an ingredient in other recipes?
 }
 
 export interface PromoItem {
