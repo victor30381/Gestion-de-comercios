@@ -92,6 +92,7 @@ export interface Order {
   clientName: string;
   items: OrderItem[];
   deliveryDate: Date;
+  deliveryTime?: string; // e.g. "14:30"
   status: 'pending' | 'completed' | 'canceled';
   total: number;
   deposit: number; // Seña

@@ -36,6 +36,7 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
         { id: '1', name: '', amount: 0, unit: 'un', quantity: 1, price: 0, suggestedPrice: 0 }
     ]);
     const [deliveryDate, setDeliveryDate] = useState('');
+    const [deliveryTime, setDeliveryTime] = useState('');
     const [deposit, setDeposit] = useState<number>(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -93,6 +94,11 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                 const d = new Date(initialOrder.deliveryDate);
                 const isoDate = d.toISOString().split('T')[0];
                 setDeliveryDate(isoDate);
+            }
+
+            // Pre-fill delivery time
+            if (initialOrder.deliveryTime) {
+                setDeliveryTime(initialOrder.deliveryTime);
             }
 
             setDeposit(initialOrder.deposit || 0);
@@ -250,8 +256,9 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                         clientY += (splitAddress.length * 8); // Increased line height
                     }
 
-                    // Delivery Date
-                    doc.text(`Fecha Entrega: ${dateStr}`, 5, clientY);
+                    // Delivery Date & Time
+                    const timeStr = deliveryTime ? ` a las ${deliveryTime}hs` : '';
+                    doc.text(`Fecha Entrega: ${dateStr}${timeStr}`, 5, clientY);
                     clientY += 8; // Increased spacing
 
                     doc.setLineWidth(0.5);
@@ -419,6 +426,7 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                 clientName: client?.name || 'Cliente Desconocido',
                 items: items,
                 deliveryDate: dateObj,
+                deliveryTime: deliveryTime || undefined,
                 status: isPastDate ? 'completed' : 'pending',
                 total,
                 deposit,
@@ -596,15 +604,28 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                         <span className="bg-brand-brown/10 w-6 h-6 rounded-full flex items-center justify-center text-sm">3</span> Detalles de Entrega
                     </h3>
 
-                    <div>
-                        <label className="block text-sm font-bold text-brand-brown mb-1.5">Fecha de Entrega</label>
-                        <input
-                            type="date"
-                            value={deliveryDate}
-                            onChange={(e) => setDeliveryDate(e.target.value)}
-                            disabled={readOnly}
-                            className="w-full p-3 rounded-xl border border-brand-brown/20 focus:ring-2 focus:ring-brand-accent/50 outline-none bg-white font-medium disabled:opacity-70 disabled:bg-stone-100"
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-bold text-brand-brown mb-1.5">Fecha de Entrega</label>
+                            <input
+                                type="date"
+                                value={deliveryDate}
+                                onChange={(e) => setDeliveryDate(e.target.value)}
+                                disabled={readOnly}
+                                className="w-full p-3 rounded-xl border border-brand-brown/20 focus:ring-2 focus:ring-brand-accent/50 outline-none bg-white font-medium disabled:opacity-70 disabled:bg-stone-100"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-brand-brown mb-1.5">Hora de Entrega</label>
+                            <input
+                                type="time"
+                                value={deliveryTime}
+                                onChange={(e) => setDeliveryTime(e.target.value)}
+                                disabled={readOnly}
+                                className="w-full p-3 rounded-xl border border-brand-brown/20 focus:ring-2 focus:ring-brand-accent/50 outline-none bg-white font-medium disabled:opacity-70 disabled:bg-stone-100"
+                                placeholder="14:00"
+                            />
+                        </div>
                     </div>
 
                     <div>

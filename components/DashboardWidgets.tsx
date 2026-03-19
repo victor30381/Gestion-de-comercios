@@ -74,6 +74,7 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({ orders, onEdit, onVi
                                     <div className="text-sm text-brand-brown">
                                         <span className="font-bold block text-brand-accent text-xs tracking-wide">
                                             {new Date(order.deliveryDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}
+                                            {order.deliveryTime && <span className="ml-1 text-brand-brown/60">· {order.deliveryTime}hs</span>}
                                         </span>
                                         <span className="font-medium text-brand-brown/80">{order.items.map(item => item.name).join(', ')}</span>
                                         <span className="text-brand-brown font-bold block text-sm mt-0.5">({order.clientName})</span>
@@ -267,7 +268,10 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ orders, onNewOrd
                                             }}
                                             className="flex-1 text-left p-2.5 rounded-xl bg-white/50 hover:bg-white text-sm text-brand-brown transition-all flex items-center justify-between group border border-transparent hover:border-brand-accent/20"
                                         >
-                                            <span className="font-medium truncate">{order.clientName}</span>
+                                            <div>
+                                                <span className="font-medium truncate block">{order.clientName}</span>
+                                                {order.deliveryTime && <span className="text-[11px] text-brand-accent font-bold">{order.deliveryTime}hs</span>}
+                                            </div>
                                             <span className="text-xs opacity-0 group-hover:opacity-100 text-brand-accent transition-opacity">Ver →</span>
                                         </button>
                                         <button
