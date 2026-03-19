@@ -240,10 +240,10 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
     };
 
     const renderMenu = () => (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 stagger-children">
             <button
                 onClick={() => setView('stock')}
-                className="flex flex-col items-center justify-center p-8 bg-brand-cream border-2 border-[#E5DCD3] rounded-2xl hover:border-brand-brown/30 hover:shadow-lg transition-all group"
+                className="flex flex-col items-center justify-center p-8 glass-card rounded-2xl hover:shadow-lg transition-all duration-300 group card-hover-lift animate-fade-in-up"
             >
                 <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">📦</div>
                 <h3 className="text-xl font-bold text-brand-brown mb-2">Stock</h3>
@@ -254,7 +254,7 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
 
             <button
                 onClick={() => setView('production')}
-                className="flex flex-col items-center justify-center p-8 bg-brand-cream border-2 border-[#E5DCD3] rounded-2xl hover:border-brand-brown/30 hover:shadow-lg transition-all group"
+                className="flex flex-col items-center justify-center p-8 glass-card rounded-2xl hover:shadow-lg transition-all duration-300 group card-hover-lift animate-fade-in-up"
             >
                 <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">👩‍🍳</div>
                 <h3 className="text-xl font-bold text-brand-brown mb-2">Producción</h3>

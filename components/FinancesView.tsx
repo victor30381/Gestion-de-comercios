@@ -312,7 +312,7 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
     const maxVal = Math.max(...sortedData.map(d => d.ingresos), 1);
 
     return (
-        <div className="flex flex-col gap-8 pb-10">
+        <div className="flex flex-col gap-8 pb-10 animate-fade-in">
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <h2 className="text-3xl font-serif font-bold text-brand-brown mb-2 tracking-tight">Finanzas de la Empresa</h2>
@@ -320,8 +320,8 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
                 </div>
 
                 {/* Timeframe Selector and Filters */}
-                <div className="flex bg-brand-cream border border-[#E5DCD3] p-1 rounded-xl shadow-sm self-start md:self-auto items-center gap-1 flex-wrap md:flex-nowrap">
-                    <div className="flex bg-white/50 rounded-lg p-1">
+                <div className="flex glass-card p-1.5 rounded-2xl self-start md:self-auto items-center gap-1 flex-wrap md:flex-nowrap">
+                    <div className="flex bg-white/40 rounded-xl p-1">
                         {(['daily', 'weekly', 'monthly'] as const).map((t) => (
                             <button
                                 key={t}
@@ -331,10 +331,10 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
                                     setSelectedWeek('');
                                     setSelectedMonth('');
                                 }}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all uppercase tracking-wider
+                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 uppercase tracking-wider
                                     ${timeframe === t
-                                        ? 'bg-brand-brown text-white shadow-md'
-                                        : 'text-brand-brown/60 hover:text-brand-brown hover:bg-white/50'}`}
+                                        ? 'warm-gradient-brown text-white shadow-md'
+                                        : 'text-brand-brown/50 hover:text-brand-brown hover:bg-white/50'}`}
                             >
                                 {t === 'daily' ? 'Día' : t === 'weekly' ? 'Semana' : 'Mes'}
                             </button>
@@ -342,7 +342,7 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
                     </div>
 
                     {/* Date Pickers */}
-                    <div className="flex bg-white/50 rounded-lg p-1 items-center gap-2 h-full">
+                    <div className="flex bg-white/40 rounded-xl p-1 items-center gap-2 h-full">
                         {timeframe === 'daily' && (
                             <input 
                                 type="date" 
@@ -396,7 +396,7 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
             </header>
 
             {/* Global Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 stagger-children">
                 <StatCard title="Ingresos Totales" value={`$${totalGross.toLocaleString()}`} />
                 <StatCard title="Costos (Ventas)" value={`$${Math.round(totalCost).toLocaleString()}`} />
                 <StatCard title="Ganancia Neta" value={`$${totalProfit.toLocaleString()}`} subtext="Rentabilidad total" />
@@ -405,7 +405,7 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
             {/* Inventory & Production Stats */}
             <h3 className="text-xl font-serif font-bold text-brand-brown mt-4 mb-2">Indicadores Operativos</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex flex-col items-center text-center hover:shadow-md transition-shadow">
+                <div className="glass-card p-6 rounded-2xl flex flex-col items-center text-center card-hover-lift animate-fade-in-up">
                     <span className="text-4xl mb-2">📦</span>
                     <h4 className="text-stone-500 font-bold uppercase tracking-wider text-xs mb-1">Valor Stock Insumos</h4>
                     <p className="text-2xl font-serif font-bold text-brand-brown">
@@ -414,7 +414,7 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
                     <p className="text-xs text-stone-400 mt-2">Dinero en estantería (MP)</p>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex flex-col items-center text-center hover:shadow-md transition-shadow">
+                <div className="glass-card p-6 rounded-2xl flex flex-col items-center text-center card-hover-lift animate-fade-in-up">
                     <span className="text-4xl mb-2">👩‍🍳</span>
                     <h4 className="text-stone-500 font-bold uppercase tracking-wider text-xs mb-1">Producción Registrada</h4>
                     <p className="text-2xl font-serif font-bold text-brand-brown">
@@ -423,7 +423,7 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
                     <p className="text-xs text-stone-400 mt-2">Valor costo elaborado total</p>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex flex-col items-center text-center hover:shadow-md transition-shadow">
+                <div className="glass-card p-6 rounded-2xl flex flex-col items-center text-center card-hover-lift animate-fade-in-up">
                     <span className="text-4xl mb-2">📈</span>
                     <h4 className="text-stone-500 font-bold uppercase tracking-wider text-xs mb-1">Margen Promedio</h4>
                     <p className="text-2xl font-serif font-bold text-brand-accent">
@@ -435,11 +435,11 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
 
             {/* Visualización Simple */}
             {filteredOrders.length === 0 && isFiltered ? (
-                <div className="bg-brand-cream rounded-2xl shadow-sm border border-[#E5DCD3] p-6 lg:p-8 text-center text-brand-brown/60 font-serif italic">
+                <div className="glass-card rounded-2xl p-6 lg:p-8 text-center text-brand-brown/40 font-serif italic">
                     No hay ventas registradas para el periodo seleccionado.
                 </div>
             ) : (
-                <div className="bg-brand-cream rounded-2xl shadow-sm border border-[#E5DCD3] p-6 lg:p-8">
+                <div className="glass-card rounded-2xl p-6 lg:p-8">
                     <h3 className="text-xl font-serif font-bold text-brand-brown mb-6 flex items-center justify-between">
                         <span className="flex items-center gap-2">
                             <span className="text-2xl">📊</span>
@@ -456,9 +456,9 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
                                     <span className="capitalize">{day.date}</span>
                                     <span>${day.ingresos.toLocaleString()}</span>
                                 </div>
-                                <div className="w-full bg-white rounded-full h-3 border border-stone-100 overflow-hidden">
+                                <div className="w-full bg-white/60 rounded-full h-3.5 border border-white/40 overflow-hidden backdrop-blur-sm">
                                     <div
-                                        className="bg-brand-accent h-full transition-all duration-700 ease-out"
+                                        className="warm-gradient-accent h-full rounded-full transition-all duration-700 ease-out shadow-sm"
                                         style={{ width: `${(day.ingresos / maxVal) * 100}%` }}
                                     ></div>
                                 </div>
@@ -472,19 +472,19 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
             )}
 
             {/* Detailed Table */}
-            <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
-                <div className="bg-brand-brown px-6 py-4 flex justify-between items-center">
+            <div className="glass-card rounded-2xl overflow-hidden">
+                <div className="warm-gradient-brown px-6 py-4 flex justify-between items-center">
                     <h3 className="text-lg font-serif font-bold text-white flex items-center gap-2">
                         <span>🗓️</span> Desglose {timeframe === 'daily' ? 'Diario' : timeframe === 'weekly' ? 'Semanal' : 'Mensual'}
                     </h3>
-                    <span className="text-white/60 text-xs font-bold uppercase tracking-widest">
+                    <span className="text-white/50 text-xs font-bold uppercase tracking-widest">
                         {sortedData.length} registros
                     </span>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-brand-cream border-b border-stone-100 uppercase text-xs font-bold tracking-widest text-brand-brown/60">
+                            <tr className="bg-white/40 border-b border-brand-brown/5 uppercase text-xs font-bold tracking-widest text-brand-brown/50">
                                 <th className="px-6 py-4">Periodo</th>
                                 <th className="px-6 py-4">Ingresos</th>
                                 <th className="px-6 py-4">Costos Reales</th>
@@ -493,7 +493,7 @@ const FinancesView: React.FC<FinancesViewProps> = ({ userId }) => {
                         </thead>
                         <tbody className="text-base font-medium">
                             {sortedData.slice().reverse().map((day: DailyStat) => (
-                                <tr key={day.date} className="border-b border-stone-50 hover:bg-brand-cream/30 transition-colors">
+                                <tr key={day.date} className="border-b border-brand-brown/5 table-row-premium">
                                     <td className="px-6 py-4 font-bold text-brand-brown capitalize">{day.date}</td>
                                     <td className="px-6 py-4 text-stone-600">${day.ingresos.toLocaleString()}</td>
                                     <td className="px-6 py-4 text-red-400 font-medium">-${day.costos.toLocaleString()}</td>

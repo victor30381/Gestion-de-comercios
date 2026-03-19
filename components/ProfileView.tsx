@@ -103,7 +103,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
 
   return (
     <div className="space-y-6 pb-20 md:pb-0 animate-fade-in">
-      <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-[#E5DCD3]">
+      <div className="glass-card-strong rounded-3xl p-6 md:p-8">
         <h2 className="text-2xl font-serif font-bold text-brand-brown mb-6 flex items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -179,7 +179,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
             </div>
           </div>
 
-          <hr className="border-[#E5DCD3]" />
+          <div className="decorative-line w-full my-2"></div>
 
           {/* Theme Colors Editor */}
           <div>
@@ -200,7 +200,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
                 </button>
             </div>
             
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-6 bg-brand-beige border border-brand-brown/10 rounded-2xl">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-6 glass-card rounded-2xl">
                 
                 <div className="flex flex-col gap-2">
                    <label className="text-xs font-bold text-brand-brown uppercase">Color Primario (Botones)</label>
@@ -258,7 +258,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
             <button
               type="submit"
               disabled={isSaving}
-              className="px-8 py-4 bg-brand-brown text-white rounded-xl font-bold font-serif shadow-lg hover:shadow-xl hover:bg-[#4A2E21] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+              className="px-8 py-4 warm-gradient-brown text-white rounded-xl font-bold font-serif shadow-lg btn-glow transition-all disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isSaving ? 'Guardando...' : 'Guardar Cambios'}
             </button>

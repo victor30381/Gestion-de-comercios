@@ -18,15 +18,15 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ isOpen, onClose, user
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/50 backdrop-blur-md"
                 onClick={onClose}
             ></div>
 
             {/* Modal Container */}
-            <div className="relative w-full max-w-4xl bg-brand-cream rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
+            <div className="relative w-full max-w-4xl glass-card-strong rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-fade-in-up">
 
                 {/* Header */}
-                <div className="flex justify-between items-center p-6 pb-2 border-b border-brand-brown/10 bg-brand-cream">
+                <div className="flex justify-between items-center p-6 pb-2 border-b border-brand-brown/5">
                     <div className="flex-1 text-center">
                         <h2 className="text-2xl font-serif font-bold text-brand-brown">Calculadora Maestra</h2>
                     </div>
@@ -41,14 +41,14 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ isOpen, onClose, user
                 </div>
 
                 {/* Custom Folder Tabs */}
-                <div className="flex px-6 pt-6 gap-1 overflow-visible bg-brand-cream relative z-10">
+                <div className="flex px-6 pt-6 gap-1 overflow-visible relative z-10">
                     <button
                         onClick={() => setActiveTab('inventory')}
                         className={`
-                    px-6 py-3 rounded-t-xl font-bold text-sm transition-all relative z-20
+                    px-6 py-3 rounded-t-xl font-bold text-sm transition-all duration-200 relative z-20
                     ${activeTab === 'inventory'
-                                ? 'bg-brand-brown text-white shadow-[0_-4px_12px_rgba(0,0,0,0.15)] pb-4 -mb-1'
-                                : 'bg-brand-brown/5 text-brand-brown/60 hover:bg-brand-brown/10 hover:text-brand-brown pb-3'
+                                ? 'warm-gradient-brown text-white shadow-lg pb-4 -mb-1'
+                                : 'bg-brand-brown/5 text-brand-brown/50 hover:bg-brand-brown/10 hover:text-brand-brown pb-3'
                             }
                 `}
                     >
@@ -57,10 +57,10 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ isOpen, onClose, user
                     <button
                         onClick={() => setActiveTab('recipes')}
                         className={`
-                    px-6 py-3 rounded-t-xl font-bold text-sm transition-all relative z-10 -ml-2
+                    px-6 py-3 rounded-t-xl font-bold text-sm transition-all duration-200 relative z-10 -ml-2
                     ${activeTab === 'recipes'
-                                ? 'bg-brand-brown text-white shadow-[0_-4px_12px_rgba(0,0,0,0.15)] pb-4 -mb-1 z-30'
-                                : 'bg-brand-brown/5 text-brand-brown/60 hover:bg-brand-brown/10 hover:text-brand-brown pb-3'
+                                ? 'warm-gradient-brown text-white shadow-lg pb-4 -mb-1 z-30'
+                                : 'bg-brand-brown/5 text-brand-brown/50 hover:bg-brand-brown/10 hover:text-brand-brown pb-3'
                             }
                 `}
                     >
@@ -69,10 +69,10 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ isOpen, onClose, user
                     <button
                         onClick={() => setActiveTab('calc')}
                         className={`
-                    px-6 py-3 rounded-t-xl font-bold text-sm transition-all relative -ml-2
+                    px-6 py-3 rounded-t-xl font-bold text-sm transition-all duration-200 relative -ml-2
                     ${activeTab === 'calc'
-                                ? 'bg-brand-brown text-white shadow-[0_-4px_12px_rgba(0,0,0,0.15)] pb-4 -mb-1 z-30'
-                                : 'bg-brand-brown/5 text-brand-brown/70 hover:bg-brand-brown/20 pb-3'
+                                ? 'warm-gradient-brown text-white shadow-lg pb-4 -mb-1 z-30'
+                                : 'bg-brand-brown/5 text-brand-brown/50 hover:bg-brand-brown/10 pb-3'
                             }
                 `}
                     >
@@ -81,7 +81,7 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ isOpen, onClose, user
                 </div>
 
                 {/* Content Body */}
-                <div className="flex-1 overflow-y-auto p-0 bg-white border-t-8 border-brand-brown rounded-b-2xl relative z-20 shadow-[-2px_-4px_10px_rgba(0,0,0,0.05)]">
+                <div className="flex-1 overflow-y-auto p-0 bg-white/90 backdrop-blur border-t-4 border-brand-brown rounded-b-2xl relative z-20">
                     <div className="p-6">
                         {activeTab === 'inventory' && <Ingredients userId={userId} />}
                         {activeTab === 'recipes' && <Recipes userId={userId} />}

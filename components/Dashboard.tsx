@@ -99,9 +99,9 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, onEditOrder, onViewOrder,
     const monthlyProfit = Math.round(monthlyStats.gross - monthlyStats.cost);
 
     return (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-8 animate-fade-in">
             {/* Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 stagger-children">
                 <StatCard title="Pedidos Hoy:" value={ordersTodayCount.toString()} />
                 <StatCard
                     title="Ingresos Hoy:"

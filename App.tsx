@@ -80,54 +80,67 @@ function App() {
   const handleLogout = () => signOut(auth);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-brand-beige text-brand-brown font-serif">Cargando...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center warm-gradient-bg">
+        <div className="flex flex-col items-center gap-4 animate-fade-in">
+          <div className="w-12 h-12 rounded-full border-4 border-brand-accent/30 border-t-brand-accent animate-spin"></div>
+          <span className="text-brand-brown font-serif text-lg font-medium">Cargando...</span>
+        </div>
+      </div>
+    );
   }
 
   // LOGIN SCREEN
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-brand-beige">
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 border border-[#E5DCD3]">
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 warm-gradient-bg relative overflow-hidden">
+        {/* Floating Decorative Orbs */}
+        <div className="floating-orb absolute top-[10%] left-[15%] w-64 h-64 bg-brand-accent/20" style={{animationDelay: '0s'}}></div>
+        <div className="floating-orb absolute bottom-[15%] right-[10%] w-80 h-80 bg-brand-accent/15" style={{animationDelay: '-3s'}}></div>
+        <div className="floating-orb absolute top-[60%] left-[60%] w-48 h-48 bg-brand-brown/10" style={{animationDelay: '-5s'}}></div>
+
+        <div className="w-full max-w-md glass-card-strong rounded-3xl p-8 md:p-10 relative z-10 animate-fade-in-up">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-serif font-bold text-brand-brown mb-2">{localStorage.getItem('savedCompanyName') || 'Alternativa Keto'}</h1>
-            <p className="text-stone-500">Gestiona tu comercio con estilo.</p>
+            <h1 className="text-4xl md:text-5xl font-serif font-bold text-gradient-warm mb-3 tracking-tight">{localStorage.getItem('savedCompanyName') || 'Alternativa Keto'}</h1>
+            <p className="text-stone-500 font-medium text-sm tracking-wide">Gestiona tu comercio con estilo.</p>
+            <div className="decorative-line w-20 mx-auto mt-4"></div>
           </div>
 
           <form onSubmit={handleAuth} className="space-y-5">
             <div>
-              <label className="block text-sm font-bold text-brand-brown mb-1.5">Email</label>
+              <label className="block text-sm font-bold text-brand-brown mb-2 tracking-wide">Email</label>
               <input
                 type="email"
                 required
-                className="w-full p-4 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-brand-cream placeholder-stone-400 transition-all shadow-sm"
+                className="w-full p-4 rounded-xl border border-white/60 focus:outline-none focus:border-brand-accent/40 input-premium text-brand-brown bg-white/50 placeholder-stone-400 transition-all font-medium"
                 placeholder="nombre@ejemplo.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-brand-brown mb-1.5">Contraseña</label>
+              <label className="block text-sm font-bold text-brand-brown mb-2 tracking-wide">Contraseña</label>
               <input
                 type="password"
                 required
-                className="w-full p-4 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-brand-cream placeholder-stone-400 transition-all shadow-sm"
+                className="w-full p-4 rounded-xl border border-white/60 focus:outline-none focus:border-brand-accent/40 input-premium text-brand-brown bg-white/50 placeholder-stone-400 transition-all font-medium"
                 placeholder="••••••••"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
               />
             </div>
 
-            {authError && <p className="text-red-500 text-center text-sm bg-red-50 p-2 rounded-lg border border-red-100">{authError}</p>}
+            {authError && <p className="text-red-600 text-center text-sm bg-red-50/80 backdrop-blur p-3 rounded-xl border border-red-100">{authError}</p>}
 
-            <button type="submit" className="w-full bg-brand-brown text-white py-4 rounded-xl font-bold font-serif text-lg shadow-lg shadow-brand-brown/20 hover:bg-[#4A2E21] hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200">
+            <button type="submit" className="w-full warm-gradient-brown text-white py-4 rounded-xl font-bold font-serif text-lg btn-glow shadow-lg shadow-brand-brown/20 transition-all duration-300">
               {isRegistering ? 'Crear Cuenta' : 'Ingresar al Dashboard'}
             </button>
           </form>
 
-          <div className="mt-8 text-center pt-6 border-t border-stone-100">
+          <div className="mt-8 text-center pt-6 border-t border-brand-brown/10">
             <button
               onClick={() => setIsRegistering(!isRegistering)}
-              className="text-brand-accent hover:text-brand-brown text-sm font-bold underline transition-colors"
+              className="text-brand-accent hover:text-brand-brown text-sm font-bold transition-colors duration-200"
             >
               {isRegistering ? '¿Ya tienes cuenta? Ingresa aquí' : '¿Nuevo usuario? Regístrate gratis'}
             </button>

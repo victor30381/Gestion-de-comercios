@@ -26,7 +26,7 @@ const OrdersModal: React.FC<OrdersModalProps> = ({ isOpen, onClose, userId, init
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-brown/20 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-fade-in">
             {/* Backdrop click handler */}
             <div
                 className="absolute inset-0"
@@ -34,7 +34,7 @@ const OrdersModal: React.FC<OrdersModalProps> = ({ isOpen, onClose, userId, init
             ></div>
 
             {/* Modal Container */}
-            <div className="relative w-full max-w-2xl bg-brand-cream rounded-2xl shadow-2xl flex flex-col animate-in fade-in zoom-in duration-200 p-8 border border-brand-brown/10 max-h-[90vh] overflow-hidden">
+            <div className="relative w-full max-w-2xl glass-card-strong rounded-2xl shadow-2xl flex flex-col animate-fade-in-up p-8 max-h-[90vh] overflow-hidden">
 
                 {/* Close Button */}
                 <button
@@ -59,7 +59,7 @@ const OrdersModal: React.FC<OrdersModalProps> = ({ isOpen, onClose, userId, init
                             {/* Clientes Card */}
                             <button
                                 onClick={() => setView('clients')}
-                                className="group flex flex-col items-center p-8 bg-gradient-to-br from-[#D4A373] to-[#C59263] rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border border-[#B08055]"
+                                className="group flex flex-col items-center p-8 bg-gradient-to-br from-[#D4A373]/80 to-[#B8845E]/80 backdrop-blur rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.03] transition-all duration-300 border border-white/20"
                             >
                                 <div className="mb-4 text-brand-brown/80 group-hover:text-brand-brown group-hover:scale-110 transition-transform duration-300">
                                     <div className="relative">
@@ -83,7 +83,7 @@ const OrdersModal: React.FC<OrdersModalProps> = ({ isOpen, onClose, userId, init
                             {/* Nuevo Pedido Card */}
                             <button
                                 onClick={() => setView('newOrder')}
-                                className="group flex flex-col items-center p-8 bg-gradient-to-br from-[#D4A373] to-[#C59263] rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border border-[#B08055]"
+                                className="group flex flex-col items-center p-8 bg-gradient-to-br from-[#D4A373]/80 to-[#B8845E]/80 backdrop-blur rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.03] transition-all duration-300 border border-white/20"
                             >
                                 <div className="mb-4 text-brand-brown/80 group-hover:text-brand-brown group-hover:scale-110 transition-transform duration-300">
                                     <div className="relative">

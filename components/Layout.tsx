@@ -52,7 +52,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, setActiveTab
                     toggleSidebar={toggleSidebar}
                 />
 
-                <main className="flex-1 overflow-y-auto w-full p-4 md:p-8 bg-brand-beige">
+                <main className="flex-1 overflow-y-auto w-full p-4 md:p-8 warm-gradient-bg">
                     <div className="max-w-7xl mx-auto h-full">
                         {children}
                     </div>
