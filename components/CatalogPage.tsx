@@ -12,6 +12,55 @@ interface CartItem {
     quantity: number;
 }
 
+const ImageCarousel: React.FC<{ images: string[], alt: string }> = ({ images, alt }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    if (!images || images.length === 0) {
+        return (
+            <div className="w-full h-48 warm-gradient-brown flex items-center justify-center">
+                <span className="text-5xl opacity-80">🍰</span>
+            </div>
+        );
+    }
+
+    if (images.length === 1) {
+        return (
+            <div className="w-full aspect-[4/3] overflow-hidden bg-brand-cream/50">
+                <img src={images[0]} alt={alt} className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="relative w-full aspect-[4/3] overflow-hidden group bg-brand-cream/50">
+            <img src={images[currentIndex]} alt={alt} className="w-full h-full object-cover animate-fade-in hover:scale-105 transition-transform duration-700" key={currentIndex} />
+            
+            {/* Arrows */}
+            <div className="absolute inset-0 flex items-center justify-between p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCurrentIndex(prev => prev === 0 ? images.length - 1 : prev - 1); }}
+                    className="w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/50 transition-colors shadow-sm"
+                >
+                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+                </button>
+                <button 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCurrentIndex(prev => prev === images.length - 1 ? 0 : prev + 1); }}
+                    className="w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/50 transition-colors shadow-sm"
+                >
+                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+                </button>
+            </div>
+
+            {/* Dots */}
+            <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
+                {images.map((_, idx) => (
+                    <div key={idx} className={`w-1.5 h-1.5 rounded-full transition-colors shadow-sm ${idx === currentIndex ? 'bg-white scale-125' : 'bg-white/50'}`} />
+                ))}
+            </div>
+        </div>
+    );
+};
+
 const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [loading, setLoading] = useState(true);
@@ -116,7 +165,7 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                 amount: item.recipe.totalYieldWeight || 0,
                 unit: 'un',
                 quantity: item.quantity,
-                price: (item.recipe.catalogPrice || 0) * item.quantity,
+                price: item.recipe.catalogPrice || 0,
             }));
 
             await addDoc(collection(db, 'orders'), {
@@ -134,6 +183,7 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                 clientPhone: clientPhone.trim(),
                 clientAddress: clientAddress.trim(),
                 clientNotes: clientNotes.trim(),
+                isRead: false,
             });
 
             setOrderSuccess(true);
@@ -223,13 +273,11 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
             <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-brand-brown/10 shadow-sm">
                 <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        {shopLogo ? (
-                            <img src={shopLogo} alt="Logo" className="w-10 h-10 rounded-full object-cover border-2 border-brand-brown/20" />
-                        ) : (
-                            <div className="w-10 h-10 rounded-full warm-gradient-brown flex items-center justify-center text-white font-bold text-lg">
-                                {shopName?.charAt(0) || 'K'}
-                            </div>
-                        )}
+                        <img 
+                            src={shopLogo || `${import.meta.env.BASE_URL}logo.png`} 
+                            alt="Logo" 
+                            className="w-12 h-12 rounded-full object-cover border-2 border-brand-brown/20 bg-white shadow-sm" 
+                        />
                         <h1 className="text-xl font-serif font-bold text-brand-brown">{shopName || 'Catálogo'}</h1>
                     </div>
                     <button
@@ -264,14 +312,10 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                                 const inCart = cart.find(i => i.recipe.id === recipe.id);
                                 return (
                                     <div key={recipe.id} className="glass-card rounded-2xl overflow-hidden card-hover-lift transition-all duration-300 flex flex-col">
-                                        {/* Image placeholder */}
-                                        {recipe.catalogImage ? (
-                                            <img src={recipe.catalogImage} alt={recipe.name} className="w-full h-48 object-cover" />
-                                        ) : (
-                                            <div className="w-full h-48 warm-gradient-brown flex items-center justify-center">
-                                                <span className="text-5xl opacity-80">🍰</span>
-                                            </div>
-                                        )}
+                                        <ImageCarousel 
+                                            images={recipe.catalogImages && recipe.catalogImages.length > 0 ? recipe.catalogImages : (recipe.catalogImage ? [recipe.catalogImage] : [])} 
+                                            alt={recipe.name} 
+                                        />
 
                                         <div className="p-5 flex flex-col flex-1">
                                             <h3 className="font-serif font-bold text-lg text-brand-brown mb-1">{recipe.name}</h3>
@@ -280,7 +324,7 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                                             )}
 
                                             {/* Nutritional info pills */}
-                                            {recipe.nutritionalInfo && recipe.portionWeight && recipe.portionWeight > 0 && (
+                                            {recipe.nutritionalInfo && (recipe.portionWeight || 0) > 0 && (
                                                 <div className="flex flex-wrap gap-1.5 mb-3">
                                                     {(() => {
                                                         const factor = recipe.portionWeight / recipe.totalYieldWeight;
@@ -382,9 +426,11 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                             ) : (
                                 cart.map(item => (
                                     <div key={item.recipe.id} className="flex items-center gap-3 bg-brand-brown/5 rounded-xl p-3">
-                                        <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0">
-                                            {item.recipe.catalogImage ? (
-                                                <img src={item.recipe.catalogImage} alt="" className="w-full h-full object-cover" />
+                                        <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-white/80 border border-brand-brown/10">
+                                            {item.recipe.catalogImages && item.recipe.catalogImages.length > 0 ? (
+                                                <img src={item.recipe.catalogImages[0]} alt="" className="w-full h-full object-contain p-0.5" />
+                                            ) : item.recipe.catalogImage ? (
+                                                <img src={item.recipe.catalogImage} alt="" className="w-full h-full object-contain p-0.5" />
                                             ) : (
                                                 <div className="w-full h-full warm-gradient-brown flex items-center justify-center text-xl">🍰</div>
                                             )}

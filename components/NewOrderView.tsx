@@ -72,19 +72,20 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
             setSelectedClientId(initialOrder.clientId);
 
             // Map items back to LocalOrderItem
-            setItems(initialOrder.items.map((i: any) => {
-                // Try to calculate suggested price on load
-                const recipe = i.recipeId ? recipes.find((r: Recipe) => r.id === i.recipeId) : null;
+            setItems(initialOrder.items.map((i: any, index: number) => {
+                // If the order came from the catalog, its `id` might be the recipe ID.
+                const inferredRecipeId = i.recipeId || (recipes.find(r => r.id === i.id) ? i.id : '');
+                const recipe = inferredRecipeId ? recipes.find((r: Recipe) => r.id === inferredRecipeId) : null;
                 const calcPrice = (recipe && i.amount) ? Math.ceil(i.amount * recipe.costPerGram * 3) : 0;
 
                 return {
                     ...i,
-                    // Ensure defaults if missing
+                    id: String(Date.now() + index), // unique UI key
                     amount: i.amount || 0,
                     unit: i.unit || 'un',
                     quantity: i.quantity || 1,
                     price: i.price || 0,
-                    recipeId: i.recipeId || '',
+                    recipeId: inferredRecipeId,
                     suggestedPrice: calcPrice
                 };
             }));
@@ -495,6 +496,39 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
 
                 {/* 1. Select Client */}
                 <div className="space-y-3">
+                    {/* Catalog Banner */}
+                    {(initialOrder as any)?.source === 'catalog' && (
+                        <div className="bg-green-50/80 border border-green-200 p-4 rounded-xl mb-4 animate-fade-in">
+                            <h4 className="font-bold text-green-800 mb-3 flex items-center gap-2">
+                                <span>🛒</span> Recibido desde el Catálogo
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 text-sm text-green-900/80 bg-white/50 p-3 rounded-xl border border-green-100">
+                                <div><strong className="text-green-900">Nombre:</strong> {initialOrder!.clientName}</div>
+                                <div><strong className="text-green-900">Teléfono:</strong> {(initialOrder as any).clientPhone || '-'}</div>
+                                <div className="md:col-span-2"><strong className="text-green-900">Dirección:</strong> {(initialOrder as any).clientAddress || '-'}</div>
+                                {(initialOrder as any).clientNotes && (
+                                    <div className="md:col-span-2"><strong className="text-green-900">Notas:</strong> {(initialOrder as any).clientNotes}</div>
+                                )}
+                            </div>
+                            {!selectedClientId && (
+                                <div className="flex flex-col md:flex-row gap-3 items-center mt-2">
+                                    <button
+                                        onClick={() => {
+                                            setNewClientName(initialOrder!.clientName);
+                                            setNewClientPhone((initialOrder as any).clientPhone || '');
+                                            setNewClientAddress((initialOrder as any).clientAddress || '');
+                                            setShowClientModal(true);
+                                        }}
+                                        className="w-full md:w-auto px-5 py-2.5 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-colors shadow-sm flex items-center justify-center gap-2"
+                                    >
+                                        <span>👤</span> Crear Nuevo Cliente
+                                    </button>
+                                    <span className="text-xs text-green-900/60 font-medium">o selecciona un cliente existente abajo 👇</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <h3 className="text-lg font-bold text-brand-brown flex items-center gap-2">
                         <span className="bg-brand-brown/10 w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span> Seleccionar Cliente
                     </h3>
@@ -504,14 +538,19 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                                 value={selectedClientId}
                                 onChange={(e) => setSelectedClientId(e.target.value)}
                                 disabled={readOnly}
-                                className="w-full p-3 pr-10 rounded-xl border border-brand-brown/20 bg-brand-cream/30 outline-none text-brand-brown appearance-none disabled:opacity-70 disabled:bg-stone-100"
+                                className={`w-full p-3 pr-10 rounded-xl border bg-brand-cream/30 outline-none text-brand-brown appearance-none disabled:opacity-70 disabled:bg-stone-100 ${!selectedClientId && (initialOrder as any)?.source === 'catalog' ? 'border-red-400 ring-2 ring-red-100' : 'border-brand-brown/20'}`}
                             >
                                 <option value="">Buscar Cliente Existente...</option>
                                 {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
                             </select>
                         </div>
                         {!readOnly && (
-                            <button onClick={() => setShowClientModal(true)} className="bg-brand-brown text-white p-3 rounded-xl hover:bg-[#5D4229] shadow-md">
+                            <button onClick={() => {
+                                setNewClientName('');
+                                setNewClientPhone('');
+                                setNewClientAddress('');
+                                setShowClientModal(true);
+                            }} className="bg-brand-brown text-white p-3 rounded-xl hover:bg-[#5D4229] shadow-md">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                             </button>
                         )}

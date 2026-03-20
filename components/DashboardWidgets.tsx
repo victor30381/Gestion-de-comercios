@@ -67,7 +67,7 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({ orders, onEdit, onVi
                         upcomingOrders.map((order) => (
                             <div
                                 key={order.id}
-                                onClick={() => onView && onView(order)}
+                                onClick={() => (!order.clientId ? (onEdit && onEdit(order)) : (onView && onView(order)))}
                                 className="flex flex-col pb-3 border-b border-brand-brown/5 last:border-0 group cursor-pointer hover:bg-white/60 transition-all duration-200 rounded-xl p-2.5"
                             >
                                 <div className="flex justify-between items-start mb-2">
@@ -270,7 +270,11 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ orders, onNewOrd
                                     <div key={order.id} className="flex gap-2 items-center">
                                         <button
                                             onClick={() => {
-                                                onViewOrder && onViewOrder(order);
+                                                if (!order.clientId) {
+                                                    onEditOrder && onEditOrder(order);
+                                                } else {
+                                                    onViewOrder && onViewOrder(order);
+                                                }
                                                 setSelectedDateDetails(null);
                                             }}
                                             className="flex-1 text-left p-2.5 rounded-xl bg-white/50 hover:bg-white text-sm text-brand-brown transition-all flex items-center justify-between group border border-transparent hover:border-brand-accent/20"

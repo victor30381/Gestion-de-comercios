@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { User } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebase';
 import { useTheme, defaultTheme } from './ThemeContext';
 import { ThemeColors, UserProfile } from '../types';
 
@@ -23,6 +24,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
 
   const [localTheme, setLocalTheme] = useState<ThemeColors>(theme);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [saveMessage, setSaveMessage] = useState({ type: '', text: '' });
   const [loadingInitial, setLoadingInitial] = useState(true);
 
@@ -63,6 +65,31 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
     setLocalTheme(newTheme);
     // Preview changes instantly locally
     setThemeLocal(newTheme);
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !user) return;
+    const file = e.target.files[0];
+    setIsUploadingLogo(true);
+    setSaveMessage({ type: '', text: '' });
+    
+    try {
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const fileName = `logos/${user.uid}_${Date.now()}.${fileExt}`;
+      const storageRef = ref(storage, fileName);
+      
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+      
+      setProfileData(prev => ({ ...prev, logoUrl: downloadURL }));
+      setSaveMessage({ type: 'success', text: 'Logo subido. Recuerda guardar los cambios.' });
+    } catch (error: any) {
+      console.error(error);
+      setSaveMessage({ type: 'error', text: 'Error al subir el logo. Verifica las reglas de Firebase Storage.' });
+    } finally {
+      setIsUploadingLogo(false);
+      e.target.value = ''; // clear input
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -111,7 +138,67 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
           Mi Perfil y Personalización
         </h2>
 
+         <div className="bg-brand-brown/5 rounded-2xl p-5 border border-brand-brown/10 mb-8 flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in-up">
+            <div>
+            <h3 className="font-bold text-brand-brown text-lg flex items-center gap-2">
+                <span>🛍️</span> Enlace a tu Catálogo Público
+            </h3>
+            <p className="text-sm text-brand-brown/60">Comparte este enlace con tus clientes para que puedan ver tus productos y hacer pedidos.</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+            <input 
+                type="text" 
+                readOnly 
+                value={`${window.location.origin}/#/catalogo/${user?.uid}`}
+                className="flex-1 md:w-72 p-3 rounded-xl border border-brand-brown/20 bg-white text-brand-brown text-sm font-medium outline-none text-center sm:text-left"
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+            />
+            <button 
+                type="button"
+                onClick={(e) => {
+                    e.preventDefault();
+                    navigator.clipboard.writeText(`${window.location.origin}/#/catalogo/${user?.uid}`);
+                    alert('¡Enlace copiado al portapapeles!');
+                }}
+                className="px-6 py-3 bg-brand-brown text-white font-bold rounded-xl hover:bg-[#5D4229] transition-colors whitespace-nowrap shadow-md"
+            >
+                Copiar
+            </button>
+            </div>
+        </div>
+
         <form onSubmit={handleSave} className="space-y-8">
+          
+          {/* Logo Upload Section */}
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 bg-brand-cream/50 p-6 rounded-2xl border border-stone-200">
+            <div className="relative group shrink-0">
+              {profileData.logoUrl ? (
+                <img src={profileData.logoUrl} alt="Logo" className="w-24 h-24 rounded-full object-cover shadow-sm bg-white" />
+              ) : (
+                <div className="w-24 h-24 rounded-full warm-gradient-brown flex items-center justify-center text-white text-3xl font-bold shadow-sm">
+                  {(profileData.companyName || profileData.displayName || 'K').charAt(0).toUpperCase()}
+                </div>
+              )}
+              {profileData.logoUrl && (
+                <button
+                  type="button"
+                  onClick={() => setProfileData(prev => ({ ...prev, logoUrl: '' }))}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm shadow-md hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Eliminar logo"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            <div className="flex-1 text-center sm:text-left">
+               <h3 className="font-bold text-brand-brown mb-1.5">Logo de la Empresa</h3>
+               <p className="text-sm text-brand-brown/60 mb-4 max-w-md">Sube el logotipo de tu marca. Aparecerá en el encabezado de tu catálogo público y en tus comprobantes.</p>
+               <label className={`px-4 py-2 border border-brand-brown text-brand-brown font-bold text-sm rounded-xl cursor-pointer hover:bg-brand-brown hover:text-white transition-colors inline-block ${isUploadingLogo ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                 {isUploadingLogo ? 'Subiendo...' : 'Subir Nuevo Logo'}
+                 <input type="file" className="hidden" accept="image/*" disabled={isUploadingLogo} onChange={handleLogoUpload} />
+               </label>
+            </div>
+          </div>
           
           {/* Personal & Company Data */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

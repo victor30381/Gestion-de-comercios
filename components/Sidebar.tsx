@@ -145,31 +145,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, activeTab, set
                             <span className="font-serif tracking-wide text-[15px]">Mi Perfil</span>
                         </button>
 
-                        {/* Catalog Link */}
-                        {user && (
-                            <button
-                                onClick={() => {
-                                    const baseUrl = window.location.origin + window.location.pathname;
-                                    const catalogUrl = `${baseUrl}#/catalogo/${user.uid}`;
-                                    navigator.clipboard.writeText(catalogUrl).then(() => {
-                                        alert('¡Link copiado al portapapeles!\n\n' + catalogUrl);
-                                    }).catch(() => {
-                                        prompt('Copiá este link:', catalogUrl);
-                                    });
-                                }}
-                                className="w-full text-left p-3.5 rounded-2xl transition-all duration-300 flex items-center gap-3.5 group text-brand-brown hover:bg-green-50 border border-transparent hover:border-green-200"
-                            >
-                                <div className="p-2 rounded-xl transition-all duration-300 bg-green-100 text-green-700 group-hover:scale-110">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <span className="font-serif tracking-wide text-[15px] block">Mi Catálogo</span>
-                                    <span className="text-[10px] text-brand-brown/50">Copiar link para clientes</span>
-                                </div>
-                            </button>
-                        )}
+                        {/* Catalog Manager Link */}
+                        <button
+                            onClick={() => { setActiveTab('catalogManager'); if (window.innerWidth < 768) toggleSidebar(); }}
+                            className={`w-full text-left p-3.5 rounded-2xl transition-all duration-300 flex items-center gap-3.5 group
+                                ${activeTab === 'catalogManager'
+                                    ? 'warm-gradient-brown text-white shadow-lg shadow-brand-brown/15 font-bold'
+                                    : 'text-brand-brown hover:bg-green-50 border border-transparent hover:border-green-200'
+                                }`}
+                        >
+                            <div className={`p-2 rounded-xl transition-all duration-300 ${activeTab === 'catalogManager' ? 'bg-white/20' : 'bg-green-100 text-green-700 group-hover:scale-110'}`}>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                </svg>
+                            </div>
+                            <div>
+                                <span className={`font-serif tracking-wide text-[15px] block ${activeTab === 'catalogManager' ? '' : 'text-green-800'}`}>Mi Catálogo</span>
+                                <span className={`text-[10px] ${activeTab === 'catalogManager' ? 'text-white/70' : 'text-green-700/60'}`}>Gestionar y compartir</span>
+                            </div>
+                        </button>
                     </nav>
 
                     <div className="text-center text-[10px] text-brand-brown/30 font-medium mt-4 tracking-wider uppercase">

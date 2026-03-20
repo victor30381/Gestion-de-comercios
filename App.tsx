@@ -10,29 +10,11 @@ import StockModal from './components/StockModal';
 import { ThemeProvider } from './components/ThemeContext';
 import ProfileView from './components/ProfileView';
 import CatalogPage from './components/CatalogPage';
+import CatalogManager from './components/CatalogManager';
 function App() {
   // Check if this is a catalog route
   const [catalogUserId, setCatalogUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const checkHash = () => {
-      const hash = window.location.hash;
-      const match = hash.match(/^\/catalogo\/(.+)$/) || hash.match(/^#\/catalogo\/(.+)$/);
-      if (match) {
-        setCatalogUserId(match[1]);
-      } else {
-        setCatalogUserId(null);
-      }
-    };
-    checkHash();
-    window.addEventListener('hashchange', checkHash);
-    return () => window.removeEventListener('hashchange', checkHash);
-  }, []);
-
-  // If catalog route, render public catalog
-  if (catalogUserId) {
-    return <CatalogPage userId={catalogUserId} />;
-  }
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -48,6 +30,21 @@ function App() {
   const [password, setPassword] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [authError, setAuthError] = useState('');
+
+  useEffect(() => {
+    const checkHash = () => {
+      const hash = window.location.hash;
+      const match = hash.match(/^\/catalogo\/(.+)$/) || hash.match(/^#\/catalogo\/(.+)$/);
+      if (match) {
+        setCatalogUserId(match[1]);
+      } else {
+        setCatalogUserId(null);
+      }
+    };
+    checkHash();
+    window.addEventListener('hashchange', checkHash);
+    return () => window.removeEventListener('hashchange', checkHash);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -101,6 +98,11 @@ function App() {
   };
 
   const handleLogout = () => signOut(auth);
+
+  // If catalog route, render public catalog
+  if (catalogUserId) {
+    return <CatalogPage userId={catalogUserId} />;
+  }
 
   if (loading) {
     return (
@@ -188,6 +190,7 @@ function App() {
         {activeTab === 'dashboard' && <Dashboard userId={user?.uid || ''} onEditOrder={handleEditOrder} onViewOrder={handleViewOrder} onNewOrderWithDate={handleNewOrderWithDate} />}
         {activeTab === 'finances' && <FinancesView userId={user?.uid || ''} />}
         {activeTab === 'profile' && <ProfileView user={user} />}
+        {activeTab === 'catalogManager' && <CatalogManager userId={user.uid} user={user} />}
         {/* Helper logic to keep other tabs valid if needed, though mostly using modals now */}
       </Layout>
 

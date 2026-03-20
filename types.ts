@@ -49,6 +49,7 @@ export interface Recipe {
   catalogPrice?: number;
   catalogDescription?: string;
   catalogImage?: string;
+  catalogImages?: string[];
   catalogOrder?: number;
 }
 
@@ -108,6 +109,7 @@ export interface Order {
   clientPhone?: string;
   clientAddress?: string;
   clientNotes?: string;
+  isRead?: boolean;
 }
 
 // Production History Log
@@ -137,4 +139,5 @@ export interface UserProfile {
   instagram: string;
   facebook: string;
   themeColors?: ThemeColors;
+  logoUrl?: string;
 }
