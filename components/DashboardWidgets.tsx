@@ -79,8 +79,15 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({ orders, onEdit, onVi
                                         <span className="font-medium text-brand-brown/80">{order.items.map(item => item.name).join(', ')}</span>
                                         <span className="text-brand-brown font-bold block text-sm mt-0.5">({order.clientName})</span>
                                     </div>
-                                    <div className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100/80 text-amber-700 border border-amber-200/50 backdrop-blur-sm">
-                                        Pendiente
+                                    <div className="flex items-center gap-1.5">
+                                        {(order as any).source === 'catalog' && (
+                                            <div className="px-2 py-1 rounded-full text-[10px] font-bold bg-green-100/80 text-green-700 border border-green-200/50">
+                                                🛒 Catálogo
+                                            </div>
+                                        )}
+                                        <div className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100/80 text-amber-700 border border-amber-200/50 backdrop-blur-sm">
+                                            Pendiente
+                                        </div>
                                     </div>
                                 </div>
 

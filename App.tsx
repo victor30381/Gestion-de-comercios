@@ -9,7 +9,30 @@ import OrdersModal from './components/OrdersModal';
 import StockModal from './components/StockModal';
 import { ThemeProvider } from './components/ThemeContext';
 import ProfileView from './components/ProfileView';
+import CatalogPage from './components/CatalogPage';
 function App() {
+  // Check if this is a catalog route
+  const [catalogUserId, setCatalogUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkHash = () => {
+      const hash = window.location.hash;
+      const match = hash.match(/^\/catalogo\/(.+)$/) || hash.match(/^#\/catalogo\/(.+)$/);
+      if (match) {
+        setCatalogUserId(match[1]);
+      } else {
+        setCatalogUserId(null);
+      }
+    };
+    checkHash();
+    window.addEventListener('hashchange', checkHash);
+    return () => window.removeEventListener('hashchange', checkHash);
+  }, []);
+
+  // If catalog route, render public catalog
+  if (catalogUserId) {
+    return <CatalogPage userId={catalogUserId} />;
+  }
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');

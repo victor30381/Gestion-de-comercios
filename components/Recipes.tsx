@@ -36,8 +36,13 @@ const Recipes: React.FC<Props> = ({ userId }) => {
   const [carbs, setCarbs] = useState('');
   const [fat, setFat] = useState('');
   const [fiber, setFiber] = useState('');
-  const [portionWeight, setPortionWeight] = useState(''); // New state for portion weight
+  const [portionWeight, setPortionWeight] = useState('');
   const [conservation, setConservation] = useState('');
+
+  // Catalog States
+  const [showInCatalog, setShowInCatalog] = useState(false);
+  const [catalogPrice, setCatalogPrice] = useState('');
+  const [catalogDescription, setCatalogDescription] = useState('');
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [viewRecipe, setViewRecipe] = useState<Recipe | null>(null);
@@ -227,7 +232,11 @@ const Recipes: React.FC<Props> = ({ userId }) => {
         fiber: isPromoMode ? autoFiber : (parseFloat(fiber) || 0),
       },
       portionWeight: parseFloat(portionWeight) || 0,
-      conservation
+      conservation,
+      // Catalog fields
+      showInCatalog,
+      catalogPrice: parseFloat(catalogPrice) || 0,
+      catalogDescription,
     };
 
     try {
@@ -285,6 +294,11 @@ const Recipes: React.FC<Props> = ({ userId }) => {
     setPortionWeight(recipe.portionWeight?.toString() || '');
     setConservation(recipe.conservation || '');
 
+    // Set catalog info
+    setShowInCatalog(!!recipe.showInCatalog);
+    setCatalogPrice(recipe.catalogPrice?.toString() || '');
+    setCatalogDescription(recipe.catalogDescription || '');
+
     setEditingId(recipe.id);
 
     // Scroll to form
@@ -328,8 +342,22 @@ const Recipes: React.FC<Props> = ({ userId }) => {
     setFiber('');
     setPortionWeight('');
     setConservation('');
+    setShowInCatalog(false);
+    setCatalogPrice('');
+    setCatalogDescription('');
     setEditingId(null);
     setErrorMsg('');
+  };
+
+  const handleToggleCatalog = async (recipe: Recipe) => {
+    try {
+      await updateDoc(doc(db, 'recipes', recipe.id), {
+        showInCatalog: !recipe.showInCatalog
+      });
+    } catch (err) {
+      console.error('Error toggling catalog:', err);
+      alert('Error al cambiar visibilidad del catálogo');
+    }
   };
 
   const getIngredientUnitLabel = (id: string, type?: 'ingredient' | 'recipe') => {
@@ -664,6 +692,47 @@ const Recipes: React.FC<Props> = ({ userId }) => {
             </div>
           )}
 
+          {/* Catalog Settings */}
+          <div className="bg-gradient-to-r from-brand-accent/10 to-brand-accent/5 p-4 rounded-xl border border-brand-accent/20">
+            <div className="flex items-center gap-3 mb-3">
+              <input
+                type="checkbox"
+                id="showInCatalog"
+                checked={showInCatalog}
+                onChange={(e) => setShowInCatalog(e.target.checked)}
+                className="w-5 h-5 text-brand-accent rounded focus:ring-brand-accent/50 border-brand-brown/20"
+              />
+              <label htmlFor="showInCatalog" className="text-sm font-bold text-brand-brown flex items-center gap-2">
+                <span>🛒</span> Publicar en Catálogo para Clientes
+              </label>
+            </div>
+
+            {showInCatalog && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 pl-8">
+                <div>
+                  <label className="block text-xs font-bold text-brand-brown mb-1">Precio de Venta ($)</label>
+                  <input
+                    type="number"
+                    value={catalogPrice}
+                    onChange={(e) => setCatalogPrice(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40 font-bold text-lg"
+                    placeholder="Ej. 5500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-brand-brown mb-1">Descripción para Cliente</label>
+                  <input
+                    type="text"
+                    value={catalogDescription}
+                    onChange={(e) => setCatalogDescription(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
+                    placeholder="Ej. Torta húmeda de chocolate sin azúcar"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-2">
             <button
               type="submit"
@@ -696,11 +765,18 @@ const Recipes: React.FC<Props> = ({ userId }) => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {savedRecipes.map(recipe => (
-                <div key={recipe.id} className="bg-white p-5 rounded-2xl shadow-sm border border-brand-brown/10 flex flex-col justify-between hover:border-brand-brown/30 transition-all">
+                <div key={recipe.id} className={`bg-white p-5 rounded-2xl shadow-sm border ${recipe.showInCatalog ? 'border-green-300' : 'border-brand-brown/10'} flex flex-col justify-between hover:border-brand-brown/30 transition-all`}>
                   <div>
                     <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-bold text-lg text-brand-brown leading-tight font-serif">{recipe.name}</h4>
-                      <span className="bg-brand-brown/10 text-brand-brown text-xs font-bold px-2 py-1 rounded-lg">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-lg text-brand-brown leading-tight font-serif">{recipe.name}</h4>
+                        {recipe.showInCatalog && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full mt-1">
+                            🛒 En Catálogo · ${recipe.catalogPrice?.toLocaleString() || '0'}
+                          </span>
+                        )}
+                      </div>
+                      <span className="bg-brand-brown/10 text-brand-brown text-xs font-bold px-2 py-1 rounded-lg ml-2 whitespace-nowrap">
                         {recipe.isPromo ? `${recipe.promoItems?.length || 0} Sub-recetas` : `${recipe.ingredients.length} Ingred.`}
                       </span>
                     </div>

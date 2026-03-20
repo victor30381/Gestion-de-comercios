@@ -35,15 +35,21 @@ export interface Recipe {
   userId: string;
   name: string;
   ingredients: RecipeIngredient[];
-  totalYieldWeight: number; // Total weight of the result (e.g. 1500g cake)
+  totalYieldWeight: number;
   totalCost: number;
-  costPerGram: number; // Or cost per unit if yield is 1
-  nutritionalInfo?: NutritionalInfo; // VALORES TOTALES DE LA RECETA
-  portionWeight?: number; // Peso de una porción en gramos
-  conservation?: string; // e.g. "Heladera: 7 días"
+  costPerGram: number;
+  nutritionalInfo?: NutritionalInfo;
+  portionWeight?: number;
+  conservation?: string;
   isPromo?: boolean;
   promoItems?: PromoItem[];
-  isIngredient?: boolean; // Can this recipe be used as an ingredient in other recipes?
+  isIngredient?: boolean;
+  // Catalog fields
+  showInCatalog?: boolean;
+  catalogPrice?: number;
+  catalogDescription?: string;
+  catalogImage?: string;
+  catalogOrder?: number;
 }
 
 export interface PromoItem {
@@ -92,11 +98,16 @@ export interface Order {
   clientName: string;
   items: OrderItem[];
   deliveryDate: Date;
-  deliveryTime?: string; // e.g. "14:30"
+  deliveryTime?: string;
   status: 'pending' | 'completed' | 'canceled';
   total: number;
-  deposit: number; // Seña
+  deposit: number;
   createdAt: Date;
+  // Catalog order fields
+  source?: 'admin' | 'catalog';
+  clientPhone?: string;
+  clientAddress?: string;
+  clientNotes?: string;
 }
 
 // Production History Log
