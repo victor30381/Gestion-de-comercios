@@ -67,6 +67,7 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
     const [error, setError] = useState(false);
     const [shopName, setShopName] = useState('');
     const [shopLogo, setShopLogo] = useState('');
+    const [sections, setSections] = useState<string[]>([]);
 
     // Cart state
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -93,6 +94,7 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                     const data = profileDoc.data();
                     setShopName(data.companyName || 'Tienda');
                     setShopLogo(data.logoUrl || '');
+                    setSections(data.catalogSections || []);
                 }
             } catch (err) {
                 console.error('Error fetching profile:', err);
@@ -269,35 +271,55 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
 
     return (
         <div className="min-h-screen warm-gradient-bg">
-            {/* Header */}
-            <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-brand-brown/10 shadow-sm">
-                <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+            {/* Floating Top Nav / Cart Button */}
+            <div className="fixed top-4 right-4 md:top-6 md:right-8 z-40 animate-fade-in-up">
+                <button
+                    onClick={() => setShowCart(true)}
+                    className="relative p-3.5 md:p-4 rounded-2xl bg-white/90 backdrop-blur-xl text-brand-brown shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white hover:scale-105 hover:shadow-[0_12px_40px_rgb(0,0,0,0.16)] transition-all duration-300 group"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-7 md:w-7 group-hover:rotate-[15deg] transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
+                    </svg>
+                    {cartCount > 0 && (
+                        <span className="absolute -top-2.5 -right-2.5 w-6 h-6 md:w-7 md:h-7 bg-brand-accent text-white text-[11px] md:text-[13px] font-black rounded-full flex items-center justify-center shadow-md animate-bounce-slow">
+                            {cartCount}
+                        </span>
+                    )}
+                </button>
+            </div>
+
+            {/* Stunning Hero Section */}
+            <header className="relative pt-24 pb-14 md:pt-32 md:pb-24 px-4 overflow-hidden">
+                {/* Immersive Decorative Elements */}
+                <div className="absolute top-[-20%] left-[-10%] w-96 h-96 bg-brand-accent/20 rounded-full blur-[100px] pointer-events-none mix-blend-multiply"></div>
+                <div className="absolute bottom-[-10%] right-[-5%] w-[30rem] h-[30rem] bg-orange-300/20 rounded-full blur-[120px] pointer-events-none mix-blend-multiply"></div>
+                <div className="absolute top-[20%] right-[10%] w-32 h-32 bg-yellow-200/40 rounded-full blur-[60px] pointer-events-none"></div>
+                
+                <div className="max-w-4xl mx-auto flex flex-col items-center text-center relative z-10 animate-fade-in-up">
+                    <div className="relative group mb-8 md:mb-10">
+                        {/* Majestic Glow Effect */}
+                        <div className="absolute -inset-3 bg-gradient-to-tr from-orange-200 via-brand-accent/40 to-yellow-100 rounded-full blur-2xl opacity-60 group-hover:opacity-80 transition duration-700 group-hover:scale-110"></div>
                         <img 
                             src={shopLogo || `${import.meta.env.BASE_URL}logo.png`} 
                             alt="Logo" 
-                            className="w-12 h-12 rounded-full object-cover border-2 border-brand-brown/20 bg-white shadow-sm" 
+                            className="relative w-40 h-40 md:w-56 md:h-56 rounded-full object-cover border-[6px] md:border-[8px] border-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] bg-white transform transition duration-700 group-hover:scale-105 group-hover:rotate-3" 
                         />
-                        <h1 className="text-xl font-serif font-bold text-brand-brown">{shopName || 'Catálogo'}</h1>
                     </div>
-                    <button
-                        onClick={() => setShowCart(true)}
-                        className="relative p-2.5 rounded-xl bg-brand-brown/5 hover:bg-brand-brown/10 text-brand-brown transition-colors"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
-                        </svg>
-                        {cartCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 warm-gradient-brown text-white text-[11px] font-bold rounded-full flex items-center justify-center">
-                                {cartCount}
-                            </span>
-                        )}
-                    </button>
+                    
+                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif font-black text-brand-brown tracking-tighter mb-5 md:mb-6 drop-shadow-sm leading-[1.1] md:leading-[1.05] px-2">
+                        {shopName || 'Nuestro Catálogo'}
+                    </h1>
+                    
+                    <div className="h-1.5 md:h-2 w-24 md:w-32 bg-gradient-to-r from-brand-accent to-orange-400 rounded-full mb-6 md:mb-8 opacity-90 shadow-sm"></div>
+
+                    <p className="text-brand-brown/80 uppercase tracking-[0.2em] md:tracking-[0.25em] text-xs md:text-sm font-bold bg-white/70 px-6 py-2.5 md:px-8 md:py-3 rounded-full inline-block backdrop-blur-md shadow-sm border border-white/60">
+                        Descubre Nuestra Selección
+                    </p>
                 </div>
             </header>
 
             {/* Products Grid */}
-            <main className="max-w-6xl mx-auto px-4 py-8">
+            <main className="max-w-6xl mx-auto px-4 py-8 relative z-10">
                 {recipes.length === 0 ? (
                     <div className="text-center py-20">
                         <div className="text-5xl mb-4">🍰</div>
@@ -306,11 +328,47 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                     </div>
                 ) : (
                     <>
-                        <h2 className="text-2xl font-serif font-bold text-brand-brown mb-6">Nuestros Productos</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {recipes.map(recipe => {
-                                const inCart = cart.find(i => i.recipe.id === recipe.id);
-                                return (
+                        {(() => {
+                            const groupedRecipes = new Map<string, Recipe[]>();
+                            const unassigned: Recipe[] = [];
+
+                            sections.forEach(sec => groupedRecipes.set(sec, []));
+
+                            recipes.forEach(recipe => {
+                                const sec = recipe.catalogSection;
+                                if (sec && groupedRecipes.has(sec)) {
+                                    groupedRecipes.get(sec)!.push(recipe);
+                                } else if (sec) {
+                                    if (!groupedRecipes.has(sec)) groupedRecipes.set(sec, []);
+                                    groupedRecipes.get(sec)!.push(recipe);
+                                } else {
+                                    unassigned.push(recipe);
+                                }
+                            });
+
+                            const sectionsToRender = Array.from(groupedRecipes.entries()).filter(([_, group]) => group.length > 0);
+                            
+                            if (unassigned.length > 0) {
+                                if (sectionsToRender.length === 0) {
+                                    sectionsToRender.push(['Nuestros Productos', unassigned]);
+                                } else {
+                                    sectionsToRender.push(['Otros Productos', unassigned]);
+                                }
+                            }
+
+                            return (
+                                <div className="space-y-16">
+                                    {sectionsToRender.map(([sectionName, groupRecipes]) => (
+                                        <div key={sectionName}>
+                                            <div className="flex items-center justify-center gap-6 mb-8">
+                                                <div className="h-px bg-brand-brown/20 flex-1 md:flex-none md:w-24"></div>
+                                                <h2 className="text-2xl md:text-3xl font-serif font-bold text-brand-brown uppercase tracking-widest text-center">{sectionName}</h2>
+                                                <div className="h-px bg-brand-brown/20 flex-1 md:flex-none md:w-24"></div>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                {groupRecipes.map(recipe => {
+                                                    const inCart = cart.find(i => i.recipe.id === recipe.id);
+                                                    return (
                                     <div key={recipe.id} className="glass-card rounded-2xl overflow-hidden card-hover-lift transition-all duration-300 flex flex-col">
                                         <ImageCarousel 
                                             images={recipe.catalogImages && recipe.catalogImages.length > 0 ? recipe.catalogImages : (recipe.catalogImage ? [recipe.catalogImage] : [])} 
@@ -377,8 +435,13 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                                         </div>
                                     </div>
                                 );
-                            })}
-                        </div>
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        })()}
                     </>
                 )}
             </main>

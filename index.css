@@ -73,6 +73,11 @@
   50% { box-shadow: 0 0 30px rgba(212, 163, 115, 0.5), 0 0 60px rgba(212, 163, 115, 0.15); }
 }
 
+@keyframes bounceSlow {
+  0%, 100% { transform: translateY(-15%); animation-timing-function: cubic-bezier(0.8,0,1,1); }
+  50% { transform: translateY(0); animation-timing-function: cubic-bezier(0,0,0.2,1); }
+}
+
 /* ===== UTILITY CLASSES ===== */
 .today-neon-glow {
   animation: neon-pulse 2s infinite ease-in-out;
@@ -91,6 +96,10 @@
 
 .animate-slide-in-left {
   animation: slideInLeft 0.4s ease-out both;
+}
+
+.animate-bounce-slow {
+  animation: bounceSlow 2s infinite;
 }
 
 /* Staggered children animation */

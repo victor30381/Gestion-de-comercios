@@ -51,6 +51,7 @@ export interface Recipe {
   catalogImage?: string;
   catalogImages?: string[];
   catalogOrder?: number;
+  catalogSection?: string;
 }
 
 export interface PromoItem {
@@ -140,4 +141,5 @@ export interface UserProfile {
   facebook: string;
   themeColors?: ThemeColors;
   logoUrl?: string;
+  catalogSections?: string[];
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, storage } from '../firebase';
-import { collection, query, where, onSnapshot, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, updateDoc, doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Recipe } from '../types';
 import { User } from 'firebase/auth';
@@ -15,10 +15,26 @@ const CatalogManager: React.FC<CatalogManagerProps> = ({ userId, user }) => {
     const [editingRecipe, setEditingRecipe] = useState<string | null>(null);
     const [tempPrice, setTempPrice] = useState('');
     const [tempDescription, setTempDescription] = useState('');
+    const [tempSection, setTempSection] = useState('');
     const [isUploading, setIsUploading] = useState(false);
+    const [sections, setSections] = useState<string[]>([]);
+    const [newSectionName, setNewSectionName] = useState('');
 
     useEffect(() => {
         if (!userId) return;
+        const fetchSections = async () => {
+            try {
+                const profileRef = doc(db, 'userProfiles', userId);
+                const snap = await getDoc(profileRef);
+                if (snap.exists() && snap.data().catalogSections) {
+                    setSections(snap.data().catalogSections);
+                }
+            } catch (err) {
+                console.error("Error fetching sections:", err);
+            }
+        };
+        fetchSections();
+
         const q = query(collection(db, 'recipes'), where('userId', '==', userId));
         const unsub = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Recipe));
@@ -39,11 +55,30 @@ const CatalogManager: React.FC<CatalogManagerProps> = ({ userId, user }) => {
         }
     };
 
+    const handleAddSection = async () => {
+        if (!newSectionName.trim()) return;
+        const name = newSectionName.trim();
+        if (sections.includes(name)) {
+            alert('Esta sección ya existe');
+            return;
+        }
+        const updated = [...sections, name];
+        setSections(updated);
+        setNewSectionName('');
+        try {
+            await setDoc(doc(db, 'userProfiles', userId), { catalogSections: updated }, { merge: true });
+        } catch (err) {
+            console.error(err);
+            alert('Error al guardar la sección en el perfil');
+        }
+    };
+
     const handleSaveDetails = async (recipeId: string) => {
         try {
             await updateDoc(doc(db, 'recipes', recipeId), {
                 catalogPrice: parseFloat(tempPrice) || 0,
                 catalogDescription: tempDescription.trim(),
+                catalogSection: tempSection,
                 showInCatalog: true // Auto-publish if they are actively editing details
             });
             setEditingRecipe(null);
@@ -123,13 +158,13 @@ const CatalogManager: React.FC<CatalogManagerProps> = ({ userId, user }) => {
                                 <input
                                     type="text"
                                     readOnly
-                                    value={`${window.location.origin}/#/catalogo/${user.uid}`}
+                                    value={`${window.location.href.split('#')[0]}#/catalogo/${user.uid}`}
                                     className="p-3 rounded-xl border border-brand-brown/20 bg-white text-brand-brown text-sm font-medium outline-none text-center sm:text-left shadow-sm min-w-[250px]"
                                     onClick={(e) => (e.target as HTMLInputElement).select()}
                                 />
                                 <button
                                     onClick={() => {
-                                        navigator.clipboard.writeText(`${window.location.origin}/#/catalogo/${user.uid}`);
+                                        navigator.clipboard.writeText(`${window.location.href.split('#')[0]}#/catalogo/${user.uid}`);
                                         alert('¡Enlace copiado al portapapeles!');
                                     }}
                                     className="px-6 py-3 bg-brand-brown text-white font-bold rounded-xl hover:bg-[#5D4229] transition-colors whitespace-nowrap shadow-md text-sm"
@@ -139,6 +174,35 @@ const CatalogManager: React.FC<CatalogManagerProps> = ({ userId, user }) => {
                             </div>
                         </div>
                     )}
+                </div>
+            </div>
+
+            {/* Sections Manager */}
+            <div className="bg-brand-brown/5 rounded-2xl p-5 border border-brand-brown/10 shadow-sm">
+                <h3 className="font-bold text-brand-brown text-sm mb-3 uppercase tracking-wide">Secciones (Categorías)</h3>
+                <div className="flex flex-wrap gap-2 items-center mb-3">
+                    {sections.map(sec => (
+                        <span key={sec} className="bg-white px-3 py-1.5 rounded-lg text-sm font-bold text-brand-brown border border-brand-brown/20 shadow-sm flex items-center gap-2">
+                            {sec}
+                        </span>
+                    ))}
+                    {sections.length === 0 && <span className="text-sm text-brand-brown/50 italic">Sin secciones creadas</span>}
+                </div>
+                <div className="flex gap-2 max-w-sm">
+                    <input 
+                        type="text" 
+                        value={newSectionName}
+                        onChange={(e) => setNewSectionName(e.target.value)}
+                        placeholder="Ej. Promos, Budines..."
+                        className="flex-1 p-2.5 rounded-xl border border-brand-brown/20 focus:ring-2 focus:ring-brand-accent/50 outline-none text-brand-brown text-sm font-medium bg-white shadow-sm"
+                        onKeyPress={e => e.key === 'Enter' && handleAddSection()}
+                    />
+                    <button 
+                        onClick={handleAddSection}
+                        className="px-4 py-2.5 warm-gradient-brown text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-sm shadow-md flex items-center justify-center gap-1"
+                    >
+                        <span className="text-lg leading-none">+</span> Crear
+                    </button>
                 </div>
             </div>
 
@@ -214,6 +278,19 @@ const CatalogManager: React.FC<CatalogManagerProps> = ({ userId, user }) => {
                                         placeholder="Descripción atractiva para el cliente..."
                                     />
                                 </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold text-brand-brown/60 mb-1 uppercase">Sección del Catálogo</label>
+                                    <select 
+                                        value={tempSection} 
+                                        onChange={(e) => setTempSection(e.target.value)}
+                                        className="w-full p-2.5 rounded-lg border border-brand-brown/20 focus:ring-2 focus:ring-brand-accent/50 outline-none text-brand-brown text-sm bg-white"
+                                    >
+                                        <option value="">Sin sección</option>
+                                        {sections.map(sec => (
+                                            <option key={sec} value={sec}>{sec}</option>
+                                        ))}
+                                    </select>
+                                </div>
                                 <div className="flex gap-2 pt-1">
                                     <button onClick={() => setEditingRecipe(null)} className="flex-1 py-2 rounded-lg text-xs font-bold text-brand-brown hover:bg-brand-brown/10 transition-colors">Cancelar</button>
                                     <button onClick={() => handleSaveDetails(recipe.id)} className="flex-1 py-2 rounded-lg text-xs font-bold bg-brand-brown text-white hover:bg-[#5D4229] transition-colors">Guardar</button>
@@ -227,12 +304,18 @@ const CatalogManager: React.FC<CatalogManagerProps> = ({ userId, user }) => {
                                         {recipe.catalogDescription}
                                     </p>
                                 )}
+                                {recipe.catalogSection && (
+                                    <div className="mt-2 inline-block bg-brand-brown/10 px-2.5 py-1 rounded-md text-[10px] font-bold text-brand-brown uppercase tracking-wide">
+                                        Sección: {recipe.catalogSection}
+                                    </div>
+                                )}
                                 <div className="pt-2">
                                     <button 
                                         onClick={() => {
                                             setEditingRecipe(recipe.id);
                                             setTempPrice(recipe.catalogPrice?.toString() || '');
                                             setTempDescription(recipe.catalogDescription || '');
+                                            setTempSection(recipe.catalogSection || '');
                                         }}
                                         className="text-xs font-bold text-brand-accent hover:text-brand-brown transition-colors flex items-center gap-1"
                                     >
