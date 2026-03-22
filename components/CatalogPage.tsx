@@ -163,6 +163,7 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
 
             const orderItems = cart.map(item => ({
                 id: item.recipe.id,
+                recipeId: item.recipe.id,
                 name: item.recipe.name,
                 amount: item.recipe.totalYieldWeight || 0,
                 unit: 'un',
@@ -176,7 +177,7 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                 clientName: clientName.trim(),
                 items: orderItems,
                 deliveryDate: dateObj,
-                deliveryTime: deliveryTime || undefined,
+                deliveryTime: deliveryTime || '',
                 status: 'pending',
                 total: cartTotal,
                 deposit: 0,

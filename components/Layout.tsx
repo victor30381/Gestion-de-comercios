@@ -12,9 +12,10 @@ interface LayoutProps {
     onOpenCalculator: () => void;
     onOpenOrders: () => void;
     onOpenStock: () => void;
+    onOpenClients: () => void;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, setActiveTab, onLogout, onOpenCalculator, onOpenOrders, onOpenStock }) => {
+const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, setActiveTab, onLogout, onOpenCalculator, onOpenOrders, onOpenStock, onOpenClients }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
@@ -40,6 +41,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, setActiveTab
                 onOpenCalculator={onOpenCalculator}
                 onOpenOrders={onOpenOrders}
                 onOpenStock={onOpenStock}
+                onOpenClients={onOpenClients}
                 user={user}
                 onLogout={onLogout}
             />

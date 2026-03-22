@@ -73,8 +73,9 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
 
             // Map items back to LocalOrderItem
             setItems(initialOrder.items.map((i: any, index: number) => {
-                // If the order came from the catalog, its `id` might be the recipe ID.
-                const inferredRecipeId = i.recipeId || (recipes.find(r => r.id === i.id) ? i.id : '');
+                // If the order came from the catalog, its `recipeId` might be populated now, 
+                // or if it's an old order, it might have saved the recipe ID in `i.id`.
+                const inferredRecipeId = i.recipeId || (i.id && i.id.length > 15 ? i.id : '');
                 const recipe = inferredRecipeId ? recipes.find((r: Recipe) => r.id === inferredRecipeId) : null;
                 const calcPrice = (recipe && i.amount) ? Math.ceil(i.amount * recipe.costPerGram * 3) : 0;
 
@@ -427,7 +428,7 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                 clientName: client?.name || 'Cliente Desconocido',
                 items: items,
                 deliveryDate: dateObj,
-                deliveryTime: deliveryTime || undefined,
+                deliveryTime: deliveryTime || '',
                 status: isPastDate ? 'completed' : 'pending',
                 total,
                 deposit,

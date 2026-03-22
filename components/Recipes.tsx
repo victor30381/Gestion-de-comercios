@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { collection, addDoc, query, where, onSnapshot, QuerySnapshot, DocumentData, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Ingredient, Recipe, getConversionFactor } from '../types';
@@ -251,7 +252,12 @@ const Recipes: React.FC<Props> = ({ userId }) => {
       setTimeout(() => setSuccessMsg(''), 3000);
 
       // Scroll to top to see success message
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      const container = document.getElementById('calc-modal-content');
+      if (container) {
+        container.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
 
     } catch (err) {
       console.error(err);
@@ -302,7 +308,12 @@ const Recipes: React.FC<Props> = ({ userId }) => {
     setEditingId(recipe.id);
 
     // Scroll to form
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const container = document.getElementById('calc-modal-content');
+    if (container) {
+      container.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
@@ -842,8 +853,8 @@ const Recipes: React.FC<Props> = ({ userId }) => {
       </div >
 
       {/* VIEW RECIPE MODAL */}
-      {viewRecipe && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-brown/40 backdrop-blur-sm animate-in fade-in duration-200">
+      {viewRecipe && createPortal(
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-3xl shadow-2xl p-6 relative animate-in zoom-in-95 duration-200 border border-brand-brown/10 custom-scrollbar">
 
             <button
@@ -979,7 +990,8 @@ const Recipes: React.FC<Props> = ({ userId }) => {
               Cerrar
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {successMsg && (

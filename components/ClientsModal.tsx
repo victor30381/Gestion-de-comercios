@@ -1,30 +1,22 @@
 import React from 'react';
-import NewOrderView from './NewOrderView';
-import { Order } from '../types';
+import ClientsView from './ClientsView';
 
-interface OrdersModalProps {
+interface ClientsModalProps {
     isOpen: boolean;
     onClose: () => void;
     userId: string;
-    initialOrder?: Order | null;
-    isReadOnly?: boolean;
-    initialDate?: Date | null;
 }
 
-const OrdersModal: React.FC<OrdersModalProps> = ({ isOpen, onClose, userId, initialOrder, isReadOnly, initialDate }) => {
+const ClientsModal: React.FC<ClientsModalProps> = ({ isOpen, onClose, userId }) => {
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-fade-in">
             {/* Backdrop click handler */}
-            <div
-                className="absolute inset-0"
-                onClick={onClose}
-            ></div>
+            <div className="absolute inset-0" onClick={onClose}></div>
 
             {/* Modal Container */}
             <div className="relative w-full max-w-2xl glass-card-strong rounded-2xl shadow-2xl flex flex-col animate-fade-in-up p-8 max-h-[90vh] overflow-hidden">
-
                 {/* Close Button */}
                 <button
                     onClick={onClose}
@@ -35,17 +27,13 @@ const OrdersModal: React.FC<OrdersModalProps> = ({ isOpen, onClose, userId, init
                     </svg>
                 </button>
 
-                {/* Content Logic - always show NewOrderView since Clients is separated */}
-                <NewOrderView
+                <ClientsView
                     userId={userId}
                     onBack={onClose}
-                    initialOrder={initialOrder}
-                    readOnly={isReadOnly}
-                    initialDate={initialDate || undefined}
                 />
             </div>
         </div>
     );
 };
 
-export default OrdersModal;
+export default ClientsModal;

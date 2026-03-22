@@ -1,0 +1,34 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      fontFamily: {
+        serif: ['"Playfair Display"', 'serif'],
+        sans: ['"Inter"', 'sans-serif'],
+      },
+      colors: {
+        rose: {
+          50: '#fff1f2',
+          100: '#ffe4e6',
+          200: '#fecdd3',
+          300: '#fda4af',
+          400: '#fb7185',
+          500: '#f43f5e',
+          600: '#e11d48',
+        },
+        cream: '#fffdd0',
+        brand: {
+          brown: 'var(--color-brand-brown, #5D3A29)',
+          beige: 'var(--color-brand-beige, #F5F0EB)',
+          cream: 'var(--color-brand-cream, #FDFBF7)',
+          accent: 'var(--color-brand-accent, #D4A373)',
+        }
+      }
+    }
+  },
+  plugins: [],
+}

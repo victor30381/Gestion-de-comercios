@@ -91,7 +91,14 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({ orders, onEdit, onVi
                                     </div>
                                 </div>
 
-                                <div className="flex gap-1.5 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <div className="flex gap-1.5 justify-end transition-opacity duration-200">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onView && onView(order); }}
+                                        className="p-1.5 text-xs bg-white/80 backdrop-blur border border-brand-brown/10 rounded-lg hover:bg-blue-50 text-brand-brown shadow-sm transition-colors"
+                                        title="Ver Pedido"
+                                    >
+                                        👁️
+                                    </button>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleToggleStatus(order); }}
                                         className="p-1.5 text-xs bg-white/80 backdrop-blur border border-brand-brown/10 rounded-lg hover:bg-green-50 text-brand-brown shadow-sm transition-colors"
@@ -149,7 +156,14 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({ orders, onEdit, onVi
                                     </div>
                                 </div>
 
-                                <div className="flex gap-1.5 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <div className="flex gap-1.5 justify-end mt-2 transition-opacity duration-200">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onView && onView(order); }}
+                                        className="p-1.5 text-xs bg-white/80 backdrop-blur border border-brand-brown/10 rounded-lg hover:bg-blue-50 text-brand-brown shadow-sm transition-colors"
+                                        title="Ver Pedido"
+                                    >
+                                        👁️
+                                    </button>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleToggleStatus(order); }}
                                         className="p-1.5 text-xs bg-white/80 backdrop-blur border border-brand-brown/10 rounded-lg hover:bg-brand-accent/10 text-brand-brown shadow-sm transition-colors"
@@ -219,6 +233,27 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ orders, onNewOrd
     const today = new Date();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDateDetails, setSelectedDateDetails] = useState<{ date: Date, orders: Order[] } | null>(null);
+    const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+
+    const handleDeleteClick = async (e: React.MouseEvent, orderId: string) => {
+        e.stopPropagation();
+        if (confirmingDeleteId === orderId) {
+            try {
+                await deleteDoc(doc(db, 'orders', orderId));
+                setConfirmingDeleteId(null);
+                setSelectedDateDetails(prev => prev ? {
+                    ...prev,
+                    orders: prev.orders.filter(o => o.id !== orderId)
+                } : null);
+            } catch (error) {
+                console.error("Error deleting order:", error);
+                alert("Error al eliminar pedido");
+            }
+        } else {
+            setConfirmingDeleteId(orderId);
+            setTimeout(() => setConfirmingDeleteId(null), 3000);
+        }
+    };
 
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -283,18 +318,31 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ orders, onNewOrd
                                                 <span className="font-medium truncate block">{order.clientName}</span>
                                                 {order.deliveryTime && <span className="text-[11px] text-brand-accent font-bold">{order.deliveryTime}hs</span>}
                                             </div>
-                                            <span className="text-xs opacity-0 group-hover:opacity-100 text-brand-accent transition-opacity">Ver →</span>
+                                            <span className="text-xs opacity-0 group-hover:opacity-100 text-brand-accent transition-opacity">Abrir</span>
                                         </button>
-                                        <button
-                                            onClick={() => {
-                                                onEditOrder && onEditOrder(order);
-                                                setSelectedDateDetails(null);
-                                            }}
-                                            className="p-2 rounded-xl bg-white/50 hover:bg-white text-brand-brown transition-all border border-transparent hover:border-brand-accent/20"
-                                            title="Editar Pedido"
-                                        >
-                                            ✏️
-                                        </button>
+                                        <div className="flex gap-1 shrink-0 ml-1" onClick={e => e.stopPropagation()}>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onViewOrder && onViewOrder(order); setSelectedDateDetails(null); }}
+                                                className="w-7 h-7 text-xs rounded-lg bg-white/50 hover:bg-brand-accent/10 border border-brand-brown/10 text-brand-brown transition-all shadow-sm flex items-center justify-center"
+                                                title="Ver"
+                                            >
+                                                👁️
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onEditOrder && onEditOrder(order); setSelectedDateDetails(null); }}
+                                                className="w-7 h-7 text-xs rounded-lg bg-white/50 hover:bg-brand-accent/10 border border-brand-brown/10 text-brand-brown transition-all shadow-sm flex items-center justify-center"
+                                                title="Editar"
+                                            >
+                                                ✏️
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleDeleteClick(e, order.id)}
+                                                className={`h-7 px-1.5 text-xs rounded-lg border shadow-sm transition-all flex items-center justify-center ${confirmingDeleteId === order.id ? 'bg-red-500 text-white border-red-500 font-bold px-2' : 'w-7 bg-white/50 border-red-200/50 hover:bg-red-50 text-red-500'}`}
+                                                title="Eliminar"
+                                            >
+                                                {confirmingDeleteId === order.id ? '¿Borrar?' : '🗑️'}
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

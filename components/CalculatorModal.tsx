@@ -81,7 +81,7 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ isOpen, onClose, user
                 </div>
 
                 {/* Content Body */}
-                <div className="flex-1 overflow-y-auto p-0 bg-white/90 backdrop-blur border-t-4 border-brand-brown rounded-b-2xl relative z-20">
+                <div id="calc-modal-content" className="flex-1 overflow-y-auto p-0 bg-white/90 backdrop-blur border-t-4 border-brand-brown rounded-b-2xl relative z-20">
                     <div className="p-6">
                         {activeTab === 'inventory' && <Ingredients userId={userId} />}
                         {activeTab === 'recipes' && <Recipes userId={userId} />}

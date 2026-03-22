@@ -73,6 +73,24 @@ const CatalogManager: React.FC<CatalogManagerProps> = ({ userId, user }) => {
         }
     };
 
+    const handleRemoveSection = async (sectionToRemove: string) => {
+        if (!confirm(`¿Seguro que quieres eliminar la sección "${sectionToRemove}"?`)) return;
+        const updated = sections.filter(s => s !== sectionToRemove);
+        setSections(updated);
+        try {
+            await setDoc(doc(db, 'userProfiles', userId), { catalogSections: updated }, { merge: true });
+            
+            // Actualizar recetas que tengan esa sección asignada
+            const recipesToUpdate = recipes.filter(r => r.catalogSection === sectionToRemove);
+            for (const r of recipesToUpdate) {
+                await updateDoc(doc(db, 'recipes', r.id), { catalogSection: '' });
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error al eliminar la sección');
+        }
+    };
+
     const handleSaveDetails = async (recipeId: string) => {
         try {
             await updateDoc(doc(db, 'recipes', recipeId), {
@@ -182,8 +200,17 @@ const CatalogManager: React.FC<CatalogManagerProps> = ({ userId, user }) => {
                 <h3 className="font-bold text-brand-brown text-sm mb-3 uppercase tracking-wide">Secciones (Categorías)</h3>
                 <div className="flex flex-wrap gap-2 items-center mb-3">
                     {sections.map(sec => (
-                        <span key={sec} className="bg-white px-3 py-1.5 rounded-lg text-sm font-bold text-brand-brown border border-brand-brown/20 shadow-sm flex items-center gap-2">
+                        <span key={sec} className="group bg-white pl-3 pr-1 py-1 rounded-lg text-sm font-bold text-brand-brown border border-brand-brown/20 shadow-sm flex items-center gap-1.5 transition-all">
                             {sec}
+                            <button 
+                                onClick={() => handleRemoveSection(sec)}
+                                className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-full transition-colors"
+                                title="Eliminar sección"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                            </button>
                         </span>
                     ))}
                     {sections.length === 0 && <span className="text-sm text-brand-brown/50 italic">Sin secciones creadas</span>}

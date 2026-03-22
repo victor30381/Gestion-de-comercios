@@ -7,6 +7,7 @@ import FinancesView from './components/FinancesView';
 import CalculatorModal from './components/CalculatorModal';
 import OrdersModal from './components/OrdersModal';
 import StockModal from './components/StockModal';
+import ClientsModal from './components/ClientsModal';
 import { ThemeProvider } from './components/ThemeContext';
 import ProfileView from './components/ProfileView';
 import CatalogPage from './components/CatalogPage';
@@ -21,6 +22,7 @@ function App() {
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
+  const [isClientsModalOpen, setIsClientsModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [selectedDateForNewOrder, setSelectedDateForNewOrder] = useState<Date | null>(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
@@ -56,6 +58,7 @@ function App() {
 
   const toggleCalculator = () => setIsCalculatorOpen(!isCalculatorOpen);
   const toggleStockModal = () => setIsStockModalOpen(!isStockModalOpen);
+  const toggleClientsModal = () => setIsClientsModalOpen(!isClientsModalOpen);
   const toggleOrdersModal = () => {
     setIsOrdersModalOpen(!isOrdersModalOpen);
     if (isOrdersModalOpen) {
@@ -186,6 +189,7 @@ function App() {
         onOpenCalculator={toggleCalculator}
         onOpenOrders={toggleOrdersModal}
         onOpenStock={toggleStockModal}
+        onOpenClients={toggleClientsModal}
       >
         {activeTab === 'dashboard' && <Dashboard userId={user?.uid || ''} onEditOrder={handleEditOrder} onViewOrder={handleViewOrder} onNewOrderWithDate={handleNewOrderWithDate} />}
         {activeTab === 'finances' && <FinancesView userId={user?.uid || ''} />}
@@ -217,6 +221,12 @@ function App() {
       <StockModal
         isOpen={isStockModalOpen}
         onClose={() => setIsStockModalOpen(false)}
+        userId={user.uid}
+      />
+
+      <ClientsModal
+        isOpen={isClientsModalOpen}
+        onClose={() => setIsClientsModalOpen(false)}
         userId={user.uid}
       />
     </ThemeProvider>
