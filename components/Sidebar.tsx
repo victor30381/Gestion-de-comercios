@@ -17,7 +17,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, activeTab, setActiveTab, onOpenCalculator, onOpenOrders, onOpenStock, onOpenClients, user, onLogout }) => {
-    const { profileName } = useTheme();
+    const { profileName, logoUrl } = useTheme();
 
     const navItems = [
         {
@@ -87,7 +87,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, activeTab, set
                     {/* Logo Area */}
                     <div className="flex flex-col items-center mb-6">
                         <div className="w-28 h-28 rounded-full overflow-hidden border-[3px] border-white shadow-lg mb-4 bg-white ring-4 ring-brand-accent/15 transition-shadow hover:shadow-xl hover:ring-brand-accent/25" style={{animation: 'pulseGlow 4s ease-in-out infinite'}}>
-                            <img src={logoAK} alt="Logo" className="w-full h-full object-cover" />
+                            <img src={logoUrl || logoAK} alt="Logo" className="w-full h-full object-cover" />
                         </div>
 
                         {/* User Profile Section */}

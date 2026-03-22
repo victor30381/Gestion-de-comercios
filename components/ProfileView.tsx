@@ -82,7 +82,11 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
       const downloadURL = await getDownloadURL(storageRef);
       
       setProfileData(prev => ({ ...prev, logoUrl: downloadURL }));
-      setSaveMessage({ type: 'success', text: 'Logo subido. Recuerda guardar los cambios.' });
+      
+      // Auto-save the logo to Firestore so it reflects globally instantly
+      await setDoc(doc(db, 'userProfiles', user.uid), { logoUrl: downloadURL }, { merge: true });
+      
+      setSaveMessage({ type: 'success', text: 'Logo subido y actualizado correctamente.' });
     } catch (error: any) {
       console.error(error);
       setSaveMessage({ type: 'error', text: 'Error al subir el logo. Verifica las reglas de Firebase Storage.' });
@@ -182,7 +186,12 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
               {profileData.logoUrl && (
                 <button
                   type="button"
-                  onClick={() => setProfileData(prev => ({ ...prev, logoUrl: '' }))}
+                  onClick={async () => {
+                    setProfileData(prev => ({ ...prev, logoUrl: '' }));
+                    if (user) {
+                      await setDoc(doc(db, 'userProfiles', user.uid), { logoUrl: '' }, { merge: true });
+                    }
+                  }}
                   className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm shadow-md hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
                   title="Eliminar logo"
                 >

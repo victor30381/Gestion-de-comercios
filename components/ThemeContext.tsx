@@ -18,20 +18,23 @@ interface ThemeContextType {
   theme: ThemeColors;
   setThemeLocal: (theme: ThemeColors) => void;
   profileName: string;
+  logoUrl: string | null;
 }
 
-const ThemeContext = createContext<ThemeContextType>({ theme: defaultTheme, setThemeLocal: () => {}, profileName: '' });
+const ThemeContext = createContext<ThemeContextType>({ theme: defaultTheme, setThemeLocal: () => {}, profileName: '', logoUrl: null });
 
 export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider: React.FC<{ userId?: string, children: React.ReactNode }> = ({ userId, children }) => {
   const [theme, setTheme] = useState<ThemeColors>(defaultTheme);
   const [profileName, setProfileName] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) {
       setTheme(defaultTheme);
       setProfileName('');
+      setLogoUrl(null);
       return;
     }
 
@@ -53,9 +56,18 @@ export const ThemeProvider: React.FC<{ userId?: string, children: React.ReactNod
         if (data.companyName) {
           localStorage.setItem('savedCompanyName', data.companyName);
         }
+        if (data.logoUrl) {
+          setLogoUrl(data.logoUrl);
+          updateFavicon(data.logoUrl);
+        } else {
+          setLogoUrl(null);
+          updateFavicon(null); // Or default reset if you prefer
+        }
       } else {
         setTheme(defaultTheme);
         setProfileName('');
+        setLogoUrl(null);
+        updateFavicon(null);
       }
     }, (error) => {
       console.error("Error fetching theme/profile:", error);
@@ -81,8 +93,23 @@ export const ThemeProvider: React.FC<{ userId?: string, children: React.ReactNod
       setTheme(newTheme);
   };
 
+  const updateFavicon = (url: string | null) => {
+    let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+    if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+    }
+    link.href = url || '/vite.svg'; // Or path to default keto cost logo
+  };
+
+  // On mount, we can clean up but for now leaving as is
+  useEffect(() => {
+    // optional initial setup
+  }, []);
+
   return (
-    <ThemeContext.Provider value={{ theme, setThemeLocal, profileName }}>
+    <ThemeContext.Provider value={{ theme, setThemeLocal, profileName, logoUrl }}>
       {children}
     </ThemeContext.Provider>
   );
