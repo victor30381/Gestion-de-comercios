@@ -19,6 +19,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
     companyName: '',
     instagram: '',
     facebook: '',
+    whatsappPhone: '',
     themeColors: defaultTheme,
   });
 
@@ -248,7 +249,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                  <div>
                   <label className="block text-sm font-bold text-brand-brown mb-1.5">Instagram @</label>
                   <input
@@ -268,7 +269,19 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
                     value={profileData.facebook}
                     onChange={handleInputChange}
                     className="w-full p-4 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-brand-cream placeholder-stone-400 transition-all"
-                    placeholder="Link a pág/perfil"
+                    placeholder="Enlace o nombre"
+                  />
+                </div>
+                 <div>
+                  <label className="block text-sm font-bold text-brand-brown mb-1.5">WhatsApp (Solo N°)</label>
+                  <input
+                    type="text"
+                    name="whatsappPhone"
+                    value={profileData.whatsappPhone || ''}
+                    onChange={handleInputChange}
+                    className="w-full p-4 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-brand-cream placeholder-stone-400 transition-all"
+                    placeholder="Ej: 5491132427375"
+                    title="Ingresá el número con código de país y área sin el signo + ni espacios"
                   />
                 </div>
               </div>

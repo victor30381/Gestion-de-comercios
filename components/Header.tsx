@@ -11,12 +11,77 @@ interface HeaderProps {
     toggleSidebar: () => void;
 }
 
+// Helper para sonido de notificación de nuevo pedido
+let audioUnlocked = false;
+const unlockAudio = () => {
+    if (audioUnlocked) return;
+    try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        // Reproducir silencio para destrabar el audio en móviles
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+        audioUnlocked = true;
+        document.removeEventListener('touchstart', unlockAudio);
+        document.removeEventListener('click', unlockAudio);
+    } catch (e) {}
+};
+
+if (typeof document !== 'undefined') {
+    document.addEventListener('touchstart', unlockAudio, { once: true });
+    document.addEventListener('click', unlockAudio, { once: true });
+}
+
+const playNotificationSound = () => {
+    try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        
+        if (ctx.state === 'suspended') {
+            ctx.resume();
+        }
+
+        const playTone = (freq: number, startTime: number, duration: number) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.5, startTime + 0.02); // attack suave
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration); // decaimiento
+            
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        };
+
+        const now = ctx.currentTime;
+        // Sonido de "Campanilla de tienda" (Ding-Ding ascendente)
+        playTone(783.99, now, 0.4);      // G5 (Sol)
+        playTone(1046.50, now + 0.15, 0.6); // C6 (Do alto)
+        
+    } catch (err) {
+        console.error('No se pudo reproducir el sonido', err);
+    }
+};
+
 const Header: React.FC<HeaderProps> = ({ user, title, onLogout, toggleSidebar }) => {
     const [unreadOrders, setUnreadOrders] = useState<Order[]>([]);
     const [showNotifications, setShowNotifications] = useState(false);
 
     useEffect(() => {
         if (!user) return;
+        let isInitialLoad = true;
+
         const q = query(
             collection(db, 'orders'),
             where('userId', '==', user.uid),
@@ -30,6 +95,15 @@ const Header: React.FC<HeaderProps> = ({ user, title, onLogout, toggleSidebar })
                 return timeB - timeA;
             });
             setUnreadOrders(data);
+
+            // Si no es la carga inicial y hay nuevos documentos añadidos, hacemos sonar la alerta
+            if (!isInitialLoad) {
+                const hasNew = snapshot.docChanges().some(change => change.type === 'added');
+                if (hasNew) {
+                    playNotificationSound();
+                }
+            }
+            isInitialLoad = false;
         });
         return () => unsub();
     }, [user]);

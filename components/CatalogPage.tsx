@@ -76,12 +76,152 @@ const ImageCarousel: React.FC<{ images: string[], alt: string }> = ({ images, al
     );
 };
 
+const ProductCard: React.FC<{
+    recipe: Recipe;
+    inCart?: CartItem;
+    onAddToCart: (recipe: Recipe) => void;
+    onUpdateQuantity: (recipeId: string, qty: number) => void;
+}> = ({ recipe, inCart, onAddToCart, onUpdateQuantity }) => {
+    const [isFlipped, setIsFlipped] = useState(false);
+
+    return (
+        <div className="relative group w-full h-full perspective-[1000px] card-hover-lift">
+            <div 
+                className={`w-full h-full relative transition-transform duration-700 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}
+            >
+                {/* FRONT */}
+                <div 
+                    onClick={() => { if (recipe.catalogDescription?.trim()) setIsFlipped(true); }}
+                    className={`glass-card rounded-2xl overflow-hidden flex flex-col h-full w-full [backface-visibility:hidden] ${recipe.catalogDescription?.trim() ? 'cursor-pointer' : ''}`}
+                >
+                    <ImageCarousel 
+                        images={recipe.catalogImages && recipe.catalogImages.length > 0 ? recipe.catalogImages : (recipe.catalogImage ? [recipe.catalogImage] : [])} 
+                        alt={recipe.name} 
+                    />
+                    <div className="p-5 flex flex-col flex-1">
+                        <h3 className="font-serif font-bold text-lg text-brand-brown mb-1">{recipe.name}</h3>
+                        
+                        {/* Nutritional info */}
+                        {recipe.nutritionalInfo && (recipe.portionWeight || 0) > 0 && (
+                            <div className="mb-3 bg-brand-brown/5 rounded-xl p-3 border border-brand-brown/10 shadow-sm mt-3">
+                                <div className="text-[10px] font-bold text-brand-brown/60 uppercase tracking-widest mb-2 flex justify-between items-center">
+                                    <span>Valores Nutricionales</span>
+                                    <span className="bg-white/60 px-2 py-0.5 rounded-md border border-brand-brown/5">Porción: {recipe.portionWeight}g</span>
+                                </div>
+                                {(() => {
+                                    const factor = recipe.portionWeight! / recipe.totalYieldWeight;
+                                    const cal = Math.round((recipe.nutritionalInfo?.calories || 0) * factor);
+                                    const prot = Math.round((recipe.nutritionalInfo?.protein || 0) * factor);
+                                    const carbs = Math.round((recipe.nutritionalInfo?.carbs || 0) * factor);
+                                    const fat = Math.round((recipe.nutritionalInfo?.fat || 0) * factor);
+                                    return (
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div className="flex flex-col bg-orange-50 text-orange-800 px-2.5 py-1.5 rounded-lg border border-orange-100/50 shadow-sm">
+                                                <span className="text-sm font-black">{cal}</span>
+                                                <span className="text-[9px] font-bold uppercase tracking-wider opacity-80 mt-0.5">Calorías (kcal)</span>
+                                            </div>
+                                            <div className="flex flex-col bg-blue-50 text-blue-800 px-2.5 py-1.5 rounded-lg border border-blue-100/50 shadow-sm">
+                                                <span className="text-sm font-black">{prot}g</span>
+                                                <span className="text-[9px] font-bold uppercase tracking-wider opacity-80 mt-0.5">Proteínas</span>
+                                            </div>
+                                            <div className="flex flex-col bg-yellow-50 text-yellow-800 px-2.5 py-1.5 rounded-lg border border-yellow-100/50 shadow-sm">
+                                                <span className="text-sm font-black">{carbs}g</span>
+                                                <span className="text-[9px] font-bold uppercase tracking-wider opacity-80 mt-0.5">Carbohidratos</span>
+                                            </div>
+                                            <div className="flex flex-col bg-red-50 text-red-800 px-2.5 py-1.5 rounded-lg border border-red-100/50 shadow-sm">
+                                                <span className="text-sm font-black">{fat}g</span>
+                                                <span className="text-[9px] font-bold uppercase tracking-wider opacity-80 mt-0.5">Grasas Totales</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        )}
+
+                        {recipe.catalogDescription && recipe.catalogDescription.trim() && (
+                            <div className="mt-2 mb-4 text-brand-accent font-bold text-sm flex items-center gap-1 group/btn w-fit">
+                                <span className="group-hover/btn:underline">Conocer más detalles</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
+                            </div>
+                        )}
+
+                        <div className="mt-auto flex items-center justify-between pt-3 border-t border-brand-brown/10" onClick={e => e.stopPropagation()}>
+                            <span className="text-2xl font-bold text-brand-brown">${recipe.catalogPrice?.toLocaleString() || '0'}</span>
+                            {inCart ? (
+                                <div className="flex items-center gap-2 bg-brand-brown/5 rounded-xl p-1">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onUpdateQuantity(recipe.id, inCart.quantity - 1); }}
+                                        className="w-8 h-8 rounded-lg bg-white text-brand-brown font-bold shadow-sm hover:bg-brand-brown/10 transition-colors flex items-center justify-center"
+                                    >−</button>
+                                    <span className="w-6 text-center font-bold text-brand-brown">{inCart.quantity}</span>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onUpdateQuantity(recipe.id, inCart.quantity + 1); }}
+                                        className="w-8 h-8 rounded-lg bg-white text-brand-brown font-bold shadow-sm hover:bg-brand-brown/10 transition-colors flex items-center justify-center"
+                                    >+</button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onAddToCart(recipe); }}
+                                    className="py-2 px-4 warm-gradient-brown text-white text-sm font-bold rounded-xl hover:opacity-90 transition-opacity btn-glow"
+                                >
+                                    Agregar
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* BACK */}
+                <div 
+                    className="absolute inset-0 glass-card rounded-2xl p-5 flex flex-col [transform:rotateY(180deg)] [backface-visibility:hidden] overflow-hidden bg-white/95 backdrop-blur-xl"
+                    onClick={() => setIsFlipped(false)}
+                >
+                    <div className="flex justify-between items-center border-b border-brand-brown/10 pb-3 mb-3">
+                        <h3 className="font-serif font-bold text-lg text-brand-brown flex-1 pr-2">{recipe.name}</h3>
+                        <button onClick={(e) => { e.stopPropagation(); setIsFlipped(false); }} className="w-8 h-8 flex items-center justify-center rounded-full bg-brand-brown/10 text-brand-brown hover:bg-brand-brown/20 transition-colors flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar text-brand-brown/80 text-sm whitespace-pre-wrap leading-relaxed cursor-default" onClick={e => e.stopPropagation()}>
+                        {recipe.catalogDescription}
+                    </div>
+                    
+                    <div className="mt-4 flex items-center justify-between pt-3 border-t border-brand-brown/10" onClick={e => e.stopPropagation()}>
+                        <span className="text-xl font-bold text-brand-brown">${recipe.catalogPrice?.toLocaleString() || '0'}</span>
+                        {inCart ? (
+                            <div className="flex items-center gap-2 bg-brand-brown/5 rounded-xl p-1">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onUpdateQuantity(recipe.id, inCart.quantity - 1); }}
+                                    className="w-8 h-8 rounded-lg bg-white text-brand-brown font-bold shadow-sm hover:bg-brand-brown/10 transition-colors flex items-center justify-center"
+                                >−</button>
+                                <span className="w-6 text-center font-bold text-brand-brown">{inCart.quantity}</span>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onUpdateQuantity(recipe.id, inCart.quantity + 1); }}
+                                    className="w-8 h-8 rounded-lg bg-white text-brand-brown font-bold shadow-sm hover:bg-brand-brown/10 transition-colors flex items-center justify-center"
+                                >+</button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onAddToCart(recipe); }}
+                                className="py-2 px-4 warm-gradient-brown text-white text-sm font-bold rounded-xl hover:opacity-90 transition-opacity btn-glow"
+                            >
+                                Agregar
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
     const [shopName, setShopName] = useState('');
     const [shopLogo, setShopLogo] = useState('');
+    const [shopWhatsapp, setShopWhatsapp] = useState('');
     const [sections, setSections] = useState<string[]>([]);
     
     // Search and Filter state
@@ -114,6 +254,7 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                     const data = profileDoc.data();
                     setShopName(data.companyName || 'Tienda');
                     setShopLogo(data.logoUrl || '');
+                    setShopWhatsapp(data.whatsappPhone || '');
                     setSections(data.catalogSections || []);
                 }
             } catch (err) {
@@ -210,6 +351,20 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                 deliveryMethod,
                 isRead: false,
             });
+
+            if (shopWhatsapp) {
+                const itemsText = cart.map(item => `${item.quantity}x ${item.recipe.name}`).join('%0A');
+                let text = `Hola *${shopName || 'Tienda'}*! Acabo de hacer un pedido desde el catálogo digital:%0A%0A`;
+                text += `*Mi Nombre:* ${clientName.trim()}%0A`;
+                text += `*Mi Teléfono:* ${clientPhone.trim()}%0A`;
+                text += `*Entrega:* ${deliveryMethod === 'pickup' ? 'Retiro en Local' : 'Envío a Domicilio'}${deliveryMethod === 'delivery' ? ` en ${clientAddress.trim()}` : ''}%0A`;
+                text += `*Fecha de Entrega:* ${deliveryDate.split('-').reverse().join('/')} ${deliveryTime ? `a las ${deliveryTime}hs` : ''}%0A%0A`;
+                text += `*Mi Pedido:*%0A${itemsText}%0A%0A`;
+                text += `*Total Estimado:* $${cartTotal.toLocaleString()}%0A%0A`;
+                text += `Aguardamos tu confirmación. ¡Gracias!`;
+                
+                window.open(`https://wa.me/${shopWhatsapp}?text=${text}`, '_blank');
+            }
 
             setOrderSuccess(true);
             setCart([]);
@@ -491,72 +646,14 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                                                 {groupRecipes.map(recipe => {
                                                     const inCart = cart.find(i => i.recipe.id === recipe.id);
                                                     return (
-                                    <div key={recipe.id} className="glass-card rounded-2xl overflow-hidden card-hover-lift transition-all duration-300 flex flex-col">
-                                        <ImageCarousel 
-                                            images={recipe.catalogImages && recipe.catalogImages.length > 0 ? recipe.catalogImages : (recipe.catalogImage ? [recipe.catalogImage] : [])} 
-                                            alt={recipe.name} 
-                                        />
-
-                                        <div className="p-5 flex flex-col flex-1">
-                                            <h3 className="font-serif font-bold text-lg text-brand-brown mb-1">{recipe.name}</h3>
-                                            {recipe.catalogDescription && (
-                                                <p className="text-sm text-brand-brown/60 mb-3 line-clamp-2">{recipe.catalogDescription}</p>
-                                            )}
-
-                                            {/* Nutritional info pills */}
-                                            {recipe.nutritionalInfo && (recipe.portionWeight || 0) > 0 && (
-                                                <div className="flex flex-wrap gap-1.5 mb-3">
-                                                    {(() => {
-                                                        const factor = recipe.portionWeight / recipe.totalYieldWeight;
-                                                        const cal = Math.round((recipe.nutritionalInfo?.calories || 0) * factor);
-                                                        const prot = Math.round((recipe.nutritionalInfo?.protein || 0) * factor);
-                                                        const carbs = Math.round((recipe.nutritionalInfo?.carbs || 0) * factor);
-                                                        const fat = Math.round((recipe.nutritionalInfo?.fat || 0) * factor);
-                                                        return (
-                                                            <>
-                                                                <span className="text-[10px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-bold">{cal} kcal</span>
-                                                                <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">P: {prot}g</span>
-                                                                <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold">C: {carbs}g</span>
-                                                                <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">G: {fat}g</span>
-                                                            </>
-                                                        );
-                                                    })()}
-                                                    <span className="text-[10px] bg-brand-brown/10 text-brand-brown px-2 py-0.5 rounded-full font-bold">porción {recipe.portionWeight}g</span>
-                                                </div>
-                                            )}
-
-                                            {recipe.conservation && (
-                                                <p className="text-[11px] text-brand-brown/50 mb-3 flex items-center gap-1">
-                                                    <span>❄️</span> {recipe.conservation}
-                                                </p>
-                                            )}
-
-                                            <div className="mt-auto flex items-center justify-between pt-3 border-t border-brand-brown/10">
-                                                <span className="text-2xl font-bold text-brand-brown">${recipe.catalogPrice?.toLocaleString() || '0'}</span>
-                                                {inCart ? (
-                                                    <div className="flex items-center gap-2 bg-brand-brown/5 rounded-xl p-1">
-                                                        <button
-                                                            onClick={() => updateQuantity(recipe.id, inCart.quantity - 1)}
-                                                            className="w-8 h-8 rounded-lg bg-white text-brand-brown font-bold shadow-sm hover:bg-brand-brown/10 transition-colors flex items-center justify-center"
-                                                        >−</button>
-                                                        <span className="w-6 text-center font-bold text-brand-brown">{inCart.quantity}</span>
-                                                        <button
-                                                            onClick={() => updateQuantity(recipe.id, inCart.quantity + 1)}
-                                                            className="w-8 h-8 rounded-lg bg-white text-brand-brown font-bold shadow-sm hover:bg-brand-brown/10 transition-colors flex items-center justify-center"
-                                                        >+</button>
-                                                    </div>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => addToCart(recipe)}
-                                                        className="py-2 px-4 warm-gradient-brown text-white text-sm font-bold rounded-xl hover:opacity-90 transition-opacity btn-glow"
-                                                    >
-                                                        Agregar
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
+                                                        <ProductCard 
+                                                            key={recipe.id} 
+                                                            recipe={recipe} 
+                                                            inCart={inCart} 
+                                                            onAddToCart={addToCart} 
+                                                            onUpdateQuantity={updateQuantity} 
+                                                        />
+                                                    );
                                                 })}
                                             </div>
                                         </div>
@@ -600,7 +697,7 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                                 </a>
                             </li>
                             <li>
-                                <a href="https://wa.me/5491132427375" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-brand-brown hover:bg-brand-accent transition-colors bg-brand-accent/20 py-3 px-5 rounded-2xl border border-brand-accent/50 w-full text-white font-bold">
+                                <a href={`https://wa.me/${shopWhatsapp || '5491132427375'}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-brand-brown hover:bg-brand-accent transition-colors bg-brand-accent/20 py-3 px-5 rounded-2xl border border-brand-accent/50 w-full text-white font-bold">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                                     WhatsApp
                                 </a>

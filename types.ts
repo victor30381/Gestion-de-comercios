@@ -140,6 +140,7 @@ export interface UserProfile {
   companyName: string;
   instagram: string;
   facebook: string;
+  whatsappPhone?: string; // New field for WhatsApp notifications
   themeColors?: ThemeColors;
   logoUrl?: string;
   catalogSections?: string[];
