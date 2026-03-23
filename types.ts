@@ -109,7 +109,8 @@ export interface Order {
   source?: 'admin' | 'catalog';
   clientPhone?: string;
   clientAddress?: string;
-  clientNotes?: string;
+  clientNotes?: string; // Used for order preferences
+  deliveryMethod?: 'pickup' | 'delivery';
   isRead?: boolean;
 }
 

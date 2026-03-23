@@ -78,6 +78,11 @@
   50% { transform: translateY(0); animation-timing-function: cubic-bezier(0,0,0.2,1); }
 }
 
+@keyframes marquee {
+  from { transform: translateX(100vw); }
+  to { transform: translateX(-100%); }
+}
+
 /* ===== UTILITY CLASSES ===== */
 .today-neon-glow {
   animation: neon-pulse 2s infinite ease-in-out;
@@ -100,6 +105,13 @@
 
 .animate-bounce-slow {
   animation: bounceSlow 2s infinite;
+}
+
+.animate-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 16s linear infinite;
+  will-change: transform;
 }
 
 /* Staggered children animation */

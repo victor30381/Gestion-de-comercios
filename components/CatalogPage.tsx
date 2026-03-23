@@ -15,6 +15,14 @@ interface CartItem {
 const ImageCarousel: React.FC<{ images: string[], alt: string }> = ({ images, alt }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
 
+    useEffect(() => {
+        if (!images || images.length <= 1) return;
+        const interval = setInterval(() => {
+            setCurrentIndex(prev => (prev === images.length - 1 ? 0 : prev + 1));
+        }, 3000); // Cambia la foto cada 3 segundos
+        return () => clearInterval(interval);
+    }, [images]);
+
     if (!images || images.length === 0) {
         return (
             <div className="w-full h-48 warm-gradient-brown flex items-center justify-center">
@@ -33,7 +41,14 @@ const ImageCarousel: React.FC<{ images: string[], alt: string }> = ({ images, al
 
     return (
         <div className="relative w-full aspect-[4/3] overflow-hidden group bg-brand-cream/50">
-            <img src={images[currentIndex]} alt={alt} className="w-full h-full object-cover animate-fade-in hover:scale-105 transition-transform duration-700" key={currentIndex} />
+            {images.map((imgSrc, idx) => (
+                <img 
+                    key={idx}
+                    src={imgSrc} 
+                    alt={`${alt} - ${idx + 1}`} 
+                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-in-out group-hover:scale-105 ${idx === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}`} 
+                />
+            ))}
             
             {/* Arrows */}
             <div className="absolute inset-0 flex items-center justify-between p-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -68,6 +83,10 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
     const [shopName, setShopName] = useState('');
     const [shopLogo, setShopLogo] = useState('');
     const [sections, setSections] = useState<string[]>([]);
+    
+    // Search and Filter state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeSection, setActiveSection] = useState<string | null>(null);
 
     // Cart state
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -78,6 +97,7 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
     const [clientName, setClientName] = useState('');
     const [clientPhone, setClientPhone] = useState('');
     const [clientAddress, setClientAddress] = useState('');
+    const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup');
     const [deliveryDate, setDeliveryDate] = useState('');
     const [deliveryTime, setDeliveryTime] = useState('');
     const [clientNotes, setClientNotes] = useState('');
@@ -153,6 +173,7 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
     const handleSubmitOrder = async () => {
         if (!clientName.trim()) { alert('Por favor ingresá tu nombre'); return; }
         if (!clientPhone.trim()) { alert('Por favor ingresá tu teléfono'); return; }
+        if (deliveryMethod === 'delivery' && !clientAddress.trim()) { alert('Por favor ingresá tu dirección para el envío'); return; }
         if (!deliveryDate) { alert('Por favor seleccioná una fecha de entrega'); return; }
         if (cart.length === 0) { alert('Tu carrito está vacío'); return; }
 
@@ -184,8 +205,9 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                 createdAt: new Date(),
                 source: 'catalog',
                 clientPhone: clientPhone.trim(),
-                clientAddress: clientAddress.trim(),
+                clientAddress: deliveryMethod === 'delivery' ? clientAddress.trim() : '',
                 clientNotes: clientNotes.trim(),
+                deliveryMethod,
                 isRead: false,
             });
 
@@ -251,29 +273,55 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                     <div className="bg-brand-brown/5 rounded-xl p-4 mb-6 text-left space-y-1 text-sm text-brand-brown/70">
                         <p><strong>Nombre:</strong> {clientName}</p>
                         <p><strong>Teléfono:</strong> {clientPhone}</p>
+                        <p><strong>Tipo de Entrega:</strong> {deliveryMethod === 'pickup' ? 'Retiro en Local' : 'Envío a Domicilio'}</p>
+                        {deliveryMethod === 'delivery' && clientAddress && <p><strong>Dirección:</strong> {clientAddress}</p>}
                         <p><strong>Fecha:</strong> {deliveryDate.split('-').reverse().join('/')}</p>
                         {deliveryTime && <p><strong>Hora:</strong> {deliveryTime}hs</p>}
                     </div>
-                    <button
-                        onClick={() => {
-                            setOrderSuccess(false);
-                            setClientName(''); setClientPhone(''); setClientAddress('');
-                            setDeliveryDate(''); setDeliveryTime(''); setClientNotes('');
-                            setShowCheckout(false); setShowCart(false);
-                        }}
-                        className="w-full py-3 warm-gradient-brown text-white font-bold rounded-xl btn-glow"
-                    >
-                        Hacer Otro Pedido
-                    </button>
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={() => {
+                                setOrderSuccess(false);
+                                setClientName(''); setClientPhone(''); setClientAddress('');
+                                setDeliveryDate(''); setDeliveryTime(''); setClientNotes('');
+                                setShowCheckout(false); setShowCart(false);
+                            }}
+                            className="w-full py-3 warm-gradient-brown text-white font-bold rounded-xl btn-glow shadow-md"
+                        >
+                            Hacer Otro Pedido
+                        </button>
+                        <button
+                            onClick={() => {
+                                // Attempt to close if opened via script/popup or Instagram browser
+                                window.close();
+                                // Fallback for standard tabs: redirect to a blank or safe exit page
+                                window.location.href = 'about:blank';
+                            }}
+                            className="w-full py-3 rounded-xl border-2 border-brand-brown/20 text-brand-brown font-bold hover:bg-brand-brown/5 transition-all"
+                        >
+                            Salir
+                        </button>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen warm-gradient-bg">
+        <div className="min-h-screen warm-gradient-bg pt-8">
+            {/* Top Marquee Announcement */}
+            <div className="fixed top-0 left-0 w-full bg-brand-brown text-yellow-100 border-b border-brand-brown py-1.5 overflow-hidden flex shadow-md z-[60] pointer-events-none">
+                <div className="animate-marquee flex items-center font-bold text-[10px] md:text-xs tracking-[0.2em] uppercase whitespace-nowrap drop-shadow-sm">
+                    <span className="mx-4 md:mx-8">✨ Reserva tu pedido con 24 hs de anticipación ✨</span>
+                    <span className="mx-4 md:mx-8">✨ Reserva tu pedido con 24 hs de anticipación ✨</span>
+                    <span className="mx-4 md:mx-8">✨ Reserva tu pedido con 24 hs de anticipación ✨</span>
+                    <span className="mx-4 md:mx-8">✨ Reserva tu pedido con 24 hs de anticipación ✨</span>
+                    <span className="mx-4 md:mx-8">✨ Reserva tu pedido con 24 hs de anticipación ✨</span>
+                </div>
+            </div>
+
             {/* Floating Top Nav / Cart Button */}
-            <div className="fixed top-4 right-4 md:top-6 md:right-8 z-40 animate-fade-in-up">
+            <div className="fixed top-10 right-4 md:top-12 md:right-8 z-40 animate-fade-in-up">
                 <button
                     onClick={() => setShowCart(true)}
                     className="relative p-3.5 md:p-4 rounded-2xl bg-white/90 backdrop-blur-xl text-brand-brown shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white hover:scale-105 hover:shadow-[0_12px_40px_rgb(0,0,0,0.16)] transition-all duration-300 group"
@@ -297,13 +345,13 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                 <div className="absolute top-[20%] right-[10%] w-32 h-32 bg-yellow-200/40 rounded-full blur-[60px] pointer-events-none"></div>
                 
                 <div className="max-w-4xl mx-auto flex flex-col items-center text-center relative z-10 animate-fade-in-up">
-                    <div className="relative group mb-8 md:mb-10">
+                    <div className="relative group mb-8 md:mb-10 w-full flex justify-center mx-auto">
                         {/* Majestic Glow Effect */}
-                        <div className="absolute -inset-3 bg-gradient-to-tr from-orange-200 via-brand-accent/40 to-yellow-100 rounded-full blur-2xl opacity-60 group-hover:opacity-80 transition duration-700 group-hover:scale-110"></div>
+                        <div className="absolute inset-0 max-w-[10rem] max-h-[10rem] md:max-w-[14rem] md:max-h-[14rem] mx-auto bg-gradient-to-tr from-orange-200 via-brand-accent/40 to-yellow-100 rounded-full blur-2xl opacity-60 group-hover:opacity-80 transition duration-700 group-hover:scale-110"></div>
                         <img 
                             src={shopLogo || `${import.meta.env.BASE_URL}logo.png`} 
                             alt="Logo" 
-                            className="relative w-40 h-40 md:w-56 md:h-56 rounded-full object-cover border-[6px] md:border-[8px] border-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] bg-white transform transition duration-700 group-hover:scale-105 group-hover:rotate-3" 
+                            className="relative w-44 h-44 md:w-60 md:h-60 rounded-full object-cover object-center border-[6px] md:border-[8px] border-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] bg-white transform transition duration-700 group-hover:scale-105 group-hover:rotate-3" 
                         />
                     </div>
                     
@@ -319,8 +367,46 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                 </div>
             </header>
 
+            {/* Search and Filters */}
+            {recipes.length > 0 && (
+                <div className="max-w-6xl mx-auto px-4 mb-4 relative z-20">
+                    <div className="bg-white/60 backdrop-blur-md rounded-2xl p-4 shadow-sm border border-brand-brown/10 flex flex-col md:flex-row gap-4 items-center justify-between">
+                        {/* Search Bar */}
+                        <div className="relative w-full md:w-96">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-brand-brown/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                            <input
+                                type="text"
+                                placeholder="Buscar productos..."
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-3 rounded-xl border-none ring-1 ring-brand-brown/20 focus:ring-2 focus:ring-brand-accent bg-white/80 outline-none text-brand-brown transition-all"
+                            />
+                        </div>
+
+                        {/* Category Pills */}
+                        <div className="flex flex-wrap gap-2 w-full md:w-auto justify-center md:justify-end">
+                            <button
+                                onClick={() => setActiveSection(null)}
+                                className={`px-3.5 py-1.5 rounded-full whitespace-nowrap text-[11px] md:text-xs font-bold transition-all border ${activeSection === null ? 'bg-brand-brown text-white border-brand-brown shadow-sm' : 'bg-white/60 border-brand-brown/10 text-brand-brown/70 hover:bg-brand-brown/10 hover:text-brand-brown'}`}
+                            >
+                                Todos
+                            </button>
+                            {sections.map(sec => (
+                                <button
+                                    key={sec}
+                                    onClick={() => setActiveSection(sec)}
+                                    className={`px-3.5 py-1.5 rounded-full whitespace-nowrap text-[11px] md:text-xs font-bold transition-all border ${activeSection === sec ? 'bg-brand-brown text-white border-brand-brown shadow-sm' : 'bg-white/60 border-brand-brown/10 text-brand-brown/70 hover:bg-brand-brown/10 hover:text-brand-brown'}`}
+                                >
+                                    {sec}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Products Grid */}
-            <main className="max-w-6xl mx-auto px-4 py-8 relative z-10">
+            <main className="max-w-6xl mx-auto px-4 py-8 relative z-10 min-h-[50vh]">
                 {recipes.length === 0 ? (
                     <div className="text-center py-20">
                         <div className="text-5xl mb-4">🍰</div>
@@ -330,22 +416,57 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                 ) : (
                     <>
                         {(() => {
+                            let filteredRecipes = recipes;
+
+                            // Apply text search
+                            if (searchQuery.trim()) {
+                                const q = searchQuery.toLowerCase();
+                                filteredRecipes = filteredRecipes.filter(r => 
+                                    r.name.toLowerCase().includes(q) || 
+                                    (r.catalogDescription && r.catalogDescription.toLowerCase().includes(q))
+                                );
+                            }
+
+                            // Apply section filter
+                            if (activeSection) {
+                                filteredRecipes = filteredRecipes.filter(r => r.catalogSection === activeSection);
+                            }
+
+                            if (filteredRecipes.length === 0) {
+                                return (
+                                    <div className="text-center py-16 glass-card rounded-3xl animate-fade-in-up">
+                                        <div className="text-5xl mb-4">🔍</div>
+                                        <h2 className="text-xl font-serif font-bold text-brand-brown mb-2">No se encontraron productos</h2>
+                                        <p className="text-brand-brown/60">Intenta buscar con otra palabra o elimina los filtros.</p>
+                                        <button 
+                                            onClick={() => { setSearchQuery(''); setActiveSection(null); }}
+                                            className="mt-6 px-6 py-2 bg-brand-brown/10 hover:bg-brand-brown/20 text-brand-brown font-bold rounded-full transition-colors"
+                                        >
+                                            Limpiar Filtros
+                                        </button>
+                                    </div>
+                                );
+                            }
+
                             const groupedRecipes = new Map<string, Recipe[]>();
                             const unassigned: Recipe[] = [];
 
-                            sections.forEach(sec => groupedRecipes.set(sec, []));
-
-                            recipes.forEach(recipe => {
-                                const sec = recipe.catalogSection;
-                                if (sec && groupedRecipes.has(sec)) {
-                                    groupedRecipes.get(sec)!.push(recipe);
-                                } else if (sec) {
-                                    if (!groupedRecipes.has(sec)) groupedRecipes.set(sec, []);
-                                    groupedRecipes.get(sec)!.push(recipe);
-                                } else {
-                                    unassigned.push(recipe);
-                                }
-                            });
+                            if (activeSection) {
+                                groupedRecipes.set(activeSection, filteredRecipes);
+                            } else {
+                                sections.forEach(sec => groupedRecipes.set(sec, []));
+                                filteredRecipes.forEach(recipe => {
+                                    const sec = recipe.catalogSection;
+                                    if (sec && groupedRecipes.has(sec)) {
+                                        groupedRecipes.get(sec)!.push(recipe);
+                                    } else if (sec) {
+                                        if (!groupedRecipes.has(sec)) groupedRecipes.set(sec, []);
+                                        groupedRecipes.get(sec)!.push(recipe);
+                                    } else {
+                                        unassigned.push(recipe);
+                                    }
+                                });
+                            }
 
                             const sectionsToRender = Array.from(groupedRecipes.entries()).filter(([_, group]) => group.length > 0);
                             
@@ -446,6 +567,52 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                     </>
                 )}
             </main>
+
+            {/* Footer */}
+            <footer className="relative w-full bg-brand-brown text-white/80 pt-16 pb-24 md:pb-12 border-t-[8px] border-brand-accent rounded-t-[3rem] shadow-[0_-10px_40px_rgba(0,0,0,0.15)] z-20">
+                <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-center md:text-left">
+                    <div className="flex flex-col items-center md:items-start">
+                        {shopLogo && (
+                            <img src={shopLogo} alt="Logo" className="w-16 h-16 rounded-full object-cover mb-4 border-2 border-white/20" />
+                        )}
+                        <h3 className="font-serif text-3xl font-black text-white mb-4 tracking-wide">{shopName || 'Alternativa Keto'}</h3>
+                        <p className="text-sm leading-relaxed max-w-sm">
+                            Ofrecemos los mejores productos artesanales pensados para tu bienestar. Elaborados con amor y los mejores ingredientes seleccionados.
+                        </p>
+                    </div>
+                    
+                    <div className="flex flex-col items-center md:items-start">
+                        <h3 className="font-bold text-white mb-6 uppercase tracking-[0.2em] text-sm">Información</h3>
+                        <ul className="space-y-4 text-sm font-medium">
+                            <li className="flex items-center gap-3"><span className="text-xl">🏪</span> Retiro en nuestro local</li>
+                            <li className="flex items-center gap-3"><span className="text-xl">🛵</span> Envíos a domicilio a coordinar</li>
+                            <li className="flex items-center gap-3"><span className="text-xl">🕒</span> Pedidos con 24hs de anticipación</li>
+                        </ul>
+                    </div>
+                    
+                    <div className="flex flex-col items-center md:items-start">
+                        <h3 className="font-bold text-white mb-6 uppercase tracking-[0.2em] text-sm">Contacto Rápido</h3>
+                        <ul className="space-y-3 w-full max-w-[200px]">
+                            <li>
+                                <a href="https://instagram.com/alternativaketo" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-brand-brown hover:bg-white transition-colors bg-white/10 py-3 px-5 rounded-2xl border border-white/20 w-full font-bold">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                                    @alternativaketo
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://wa.me/5491132427375" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-brand-brown hover:bg-brand-accent transition-colors bg-brand-accent/20 py-3 px-5 rounded-2xl border border-brand-accent/50 w-full text-white font-bold">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                    WhatsApp
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div className="max-w-6xl mx-auto px-6 mt-12 pt-6 border-t border-white/10 text-center flex flex-col items-center justify-center opacity-70">
+                    <p className="text-xs tracking-wider">© {new Date().getFullYear()} {shopName || 'Alternativa Keto'}. Todos los derechos reservados.</p>
+                </div>
+            </footer>
 
             {/* Floating cart button (mobile) */}
             {cartCount > 0 && !showCart && !showCheckout && (
@@ -592,15 +759,37 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-bold text-brand-brown mb-1">Dirección <span className="font-normal text-brand-brown/50">(opcional)</span></label>
-                                <input
-                                    type="text"
-                                    value={clientAddress}
-                                    onChange={e => setClientAddress(e.target.value)}
-                                    className="w-full p-3 rounded-xl border border-brand-brown/20 focus:ring-2 focus:ring-brand-accent/50 outline-none bg-white"
-                                    placeholder="Tu dirección de entrega"
-                                />
+                                <label className="block text-sm font-bold text-brand-brown mb-2">Método de Entrega *</label>
+                                <div className="grid grid-cols-2 gap-3 mb-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setDeliveryMethod('pickup')}
+                                        className={`p-3 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${deliveryMethod === 'pickup' ? 'border-brand-accent bg-brand-accent/10 text-brand-brown font-bold' : 'border-brand-brown/10 hover:border-brand-brown/30 text-brand-brown/70 bg-white'}`}
+                                    >
+                                        <span>🏪</span> Retiro yo
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setDeliveryMethod('delivery')}
+                                        className={`p-3 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${deliveryMethod === 'delivery' ? 'border-brand-accent bg-brand-accent/10 text-brand-brown font-bold' : 'border-brand-brown/10 hover:border-brand-brown/30 text-brand-brown/70 bg-white'}`}
+                                    >
+                                        <span>🛵</span> Quiero envío
+                                    </button>
+                                </div>
                             </div>
+                            {deliveryMethod === 'delivery' && (
+                                <div>
+                                    <label className="block text-sm font-bold text-brand-brown mb-1">Dirección de Envío *</label>
+                                    <input
+                                        type="text"
+                                        value={clientAddress}
+                                        onChange={e => setClientAddress(e.target.value)}
+                                        className="w-full p-3 rounded-xl border border-brand-brown/20 focus:ring-2 focus:ring-brand-accent/50 outline-none bg-white"
+                                        placeholder="Tu dirección completa para el envío"
+                                        required={deliveryMethod === 'delivery'}
+                                    />
+                                </div>
+                            )}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-sm font-bold text-brand-brown mb-1">Fecha de Entrega *</label>
@@ -624,13 +813,13 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-bold text-brand-brown mb-1">Notas <span className="font-normal text-brand-brown/50">(opcional)</span></label>
+                                <label className="block text-sm font-bold text-brand-brown mb-1">Preferencias del pedido <span className="font-normal text-brand-brown/50">(opcional)</span></label>
                                 <textarea
                                     value={clientNotes}
                                     onChange={e => setClientNotes(e.target.value)}
                                     className="w-full p-3 rounded-xl border border-brand-brown/20 focus:ring-2 focus:ring-brand-accent/50 outline-none bg-white resize-none"
                                     rows={2}
-                                    placeholder="Ej. Sin frutos secos, con dedicatoria..."
+                                    placeholder="Ej. Sin frutos secos, con alguna dedicatoria, etc..."
                                 />
                             </div>
                         </div>

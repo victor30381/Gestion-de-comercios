@@ -506,9 +506,12 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 text-sm text-green-900/80 bg-white/50 p-3 rounded-xl border border-green-100">
                                 <div><strong className="text-green-900">Nombre:</strong> {initialOrder!.clientName}</div>
                                 <div><strong className="text-green-900">Teléfono:</strong> {(initialOrder as any).clientPhone || '-'}</div>
-                                <div className="md:col-span-2"><strong className="text-green-900">Dirección:</strong> {(initialOrder as any).clientAddress || '-'}</div>
+                                <div><strong className="text-green-900">Entrega:</strong> {(initialOrder as any).deliveryMethod === 'delivery' ? '🛵 Envío a Domicilio' : '🏪 Retiro en Local'}</div>
+                                {(initialOrder as any).deliveryMethod === 'delivery' && (
+                                    <div><strong className="text-green-900">Dirección:</strong> {(initialOrder as any).clientAddress || '-'}</div>
+                                )}
                                 {(initialOrder as any).clientNotes && (
-                                    <div className="md:col-span-2"><strong className="text-green-900">Notas:</strong> {(initialOrder as any).clientNotes}</div>
+                                    <div className="md:col-span-2"><strong className="text-green-900">Preferencias:</strong> {(initialOrder as any).clientNotes}</div>
                                 )}
                             </div>
                             {!selectedClientId && (
