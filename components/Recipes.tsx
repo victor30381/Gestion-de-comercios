@@ -388,11 +388,11 @@ const Recipes: React.FC<Props> = ({ userId }) => {
   const currentTotal = calculateTotalCost();
 
   return (
-    <div className="space-y-8 animate-fade-in pb-20">
+    <div className="space-y-4 sm:space-y-8 animate-fade-in pb-20">
 
       {/* FORM SECTION */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-brand-brown/10">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-brand-brown/10">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
           <h2 className="text-xl font-bold text-brand-brown font-serif">
             {editingId ? (isPromoMode ? 'Editar Promoción' : 'Editar Receta') : (isPromoMode ? 'Nueva Promoción' : 'Nueva Receta')}
           </h2>
@@ -469,11 +469,11 @@ const Recipes: React.FC<Props> = ({ userId }) => {
 
               {promoItemsList.map((row, index) => (
                 <div key={index} className="flex gap-2 items-start">
-                  <div className="flex-grow space-y-2">
+                  <div className="flex-grow space-y-2 sm:space-y-0 sm:flex sm:gap-1">
                     <select
                       value={row.recipeId}
                       onChange={(e) => handlePromoRowChange(index, 'recipeId', e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-brand-brown/20 bg-brand-beige/50 text-sm text-brand-brown focus:ring-2 focus:ring-brand-accent/50 focus:outline-none"
+                      className="w-full sm:w-2/3 p-2.5 rounded-xl border border-brand-brown/20 bg-brand-beige/50 text-sm text-brand-brown focus:ring-2 focus:ring-brand-accent/50 focus:outline-none"
                       required
                     >
                       <option value="">Seleccionar receta...</option>
@@ -481,7 +481,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
                         <option key={r.id} value={r.id}>{r.name}</option>
                       ))}
                     </select>
-                    <div className="relative">
+                    <div className="relative w-full sm:w-1/3">
                       <input
                         type="number"
                         value={row.quantityUsed}
@@ -525,7 +525,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
 
             {ingredientsList.map((row, index) => (
               <div key={index} className="flex gap-2 items-start">
-                <div className="flex-grow space-y-2">
+                <div className="flex-grow space-y-2 sm:space-y-0 sm:flex sm:gap-1">
                   <select
                     value={row.ingredientId ? `${row.type || 'ingredient'}-${row.ingredientId}` : ''}
                     onChange={(e) => {
@@ -542,7 +542,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
                        newList[index] = { ...newList[index], ingredientId: id, type: type as 'ingredient' | 'recipe' };
                        setIngredientsList(newList);
                     }}
-                    className="w-full p-2.5 rounded-xl border border-brand-brown/20 bg-brand-beige/50 text-sm text-brand-brown focus:ring-2 focus:ring-brand-accent/50 focus:outline-none"
+                    className="w-full sm:w-2/3 p-2.5 rounded-xl border border-brand-brown/20 bg-brand-beige/50 text-sm text-brand-brown focus:ring-2 focus:ring-brand-accent/50 focus:outline-none"
                     required
                   >
                     <option value="">Seleccionar ingrediente...</option>
@@ -559,7 +559,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
                       </optgroup>
                     )}
                   </select>
-                  <div className="relative">
+                  <div className="relative w-full sm:w-1/3">
                     <input
                       type="number"
                       value={row.quantityUsed}
@@ -625,7 +625,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
                 Información Nutricional (TOTAL DE LA RECETA)
               </h3>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 mb-4">
                 <div>
                   <label className="block text-xs font-bold text-brand-brown mb-1">Calorías Totales (Kcal)</label>
                   <input
@@ -678,7 +678,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-brand-brown mb-1">Peso de 1 Porción (g)</label>
                   <input
@@ -854,8 +854,8 @@ const Recipes: React.FC<Props> = ({ userId }) => {
 
       {/* VIEW RECIPE MODAL */}
       {viewRecipe && createPortal(
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-3xl shadow-2xl p-6 relative animate-in zoom-in-95 duration-200 border border-brand-brown/10 custom-scrollbar">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] overflow-y-auto rounded-3xl shadow-2xl p-5 sm:p-6 relative animate-in zoom-in-95 duration-200 border border-brand-brown/10 custom-scrollbar">
 
             <button
               onClick={() => setViewRecipe(null)}
@@ -943,7 +943,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
               <h3 className="font-bold text-brand-brown mb-3 flex items-center gap-2 text-sm uppercase tracking-wide opacity-80 border-b border-brand-brown/10 pb-1">
                 Info. Nutricional (Total)
               </h3>
-              <div className="grid grid-cols-5 gap-2 text-center">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
                 <div className="flex flex-col p-2 bg-white border border-brand-brown/10 rounded-lg shadow-sm">
                   <span className="text-[9px] font-bold text-brand-brown/60 uppercase">Kcal</span>
                   <span className="font-bold text-brand-brown">{viewRecipe.nutritionalInfo?.calories || 0}</span>
@@ -960,7 +960,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
                   <span className="text-[9px] font-bold text-brand-brown/60 uppercase">Carb</span>
                   <span className="font-bold text-brand-brown">{viewRecipe.nutritionalInfo?.carbs || 0}</span>
                 </div>
-                <div className="flex flex-col p-2 bg-white border border-brand-brown/10 rounded-lg shadow-sm">
+                <div className="flex flex-col p-2 bg-white border border-brand-brown/10 rounded-lg shadow-sm sm:col-span-1 col-span-2">
                   <span className="text-[9px] font-bold text-brand-brown/60 uppercase">Fibra</span>
                   <span className="font-bold text-brand-brown">{viewRecipe.nutritionalInfo?.fiber || 0}</span>
                 </div>

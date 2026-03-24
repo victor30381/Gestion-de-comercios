@@ -447,14 +447,20 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                         </button>
                         <button
                             onClick={() => {
-                                // Attempt to close if opened via script/popup or Instagram browser
-                                window.close();
-                                // Fallback for standard tabs: redirect to a blank or safe exit page
-                                window.location.href = 'about:blank';
+                                // Hack para intentar evadir la restricción de seguridad del navegador para cerrar pestañas no abiertas por scripts
+                                try {
+                                    window.open('', '_self', '');
+                                    window.close();
+                                } catch (e) {
+                                    console.log(e);
+                                }
+                                setTimeout(() => {
+                                    window.location.replace('about:blank');
+                                }, 100);
                             }}
                             className="w-full py-3 rounded-xl border-2 border-brand-brown/20 text-brand-brown font-bold hover:bg-brand-brown/5 transition-all"
                         >
-                            Salir
+                            Salir / Cerrar
                         </button>
                     </div>
                 </div>

@@ -112,8 +112,8 @@ const Ingredients: React.FC<Props> = ({ userId }) => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-brand-brown/10">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-brand-brown/10">
         <h2 className="text-xl font-bold text-brand-brown mb-4 font-serif">
           {editingId ? 'Editar Ingrediente' : 'Nuevo Ingrediente'}
         </h2>
@@ -129,7 +129,7 @@ const Ingredients: React.FC<Props> = ({ userId }) => {
               required
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-brand-brown mb-1">Unidad de Compra</label>
               <div className="flex gap-2">
@@ -193,9 +193,9 @@ const Ingredients: React.FC<Props> = ({ userId }) => {
           </p>
         ) : (
           ingredients.map(ing => (
-            <div key={ing.id} className="bg-white p-4 rounded-xl shadow-sm border border-brand-brown/10 flex justify-between items-center hover:border-brand-brown/30 transition-colors">
-              <div>
-                <h4 className="font-bold text-brand-brown">{ing.name}</h4>
+            <div key={ing.id} className="bg-white p-4 rounded-xl shadow-sm border border-brand-brown/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 hover:border-brand-brown/30 transition-colors">
+              <div className="flex-1 pr-2">
+                <h4 className="font-bold text-brand-brown break-words">{ing.name}</h4>
                 <p className="text-sm text-brand-brown/60">
                   ${ing.pricePerUnit.toLocaleString()} / {ing.unit}
                 </p>

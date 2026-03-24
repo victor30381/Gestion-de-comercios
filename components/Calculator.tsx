@@ -379,9 +379,9 @@ const Calculator: React.FC<Props> = ({ userId }) => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-brand-brown/10">
-        <h2 className="text-xl font-bold text-brand-brown mb-6 font-serif">Calculadora de Venta</h2>
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-brand-brown/10">
+        <h2 className="text-xl font-bold text-brand-brown mb-4 sm:mb-6 font-serif">Calculadora de Venta</h2>
 
         {errorMsg && (
           <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg mb-4 text-sm">
@@ -423,21 +423,21 @@ const Calculator: React.FC<Props> = ({ userId }) => {
       {selectedRecipeId && weight > 0 && (
         <div className="space-y-4">
           {/* Main Result Card */}
-          <div className="bg-brand-brown text-white p-6 rounded-3xl shadow-lg transform transition-all duration-300 hover:scale-[1.02]">
-            <div className="flex justify-between items-start">
-              <div>
+          <div className="bg-brand-brown text-white p-5 sm:p-6 rounded-3xl shadow-lg transform transition-all duration-300 hover:scale-[1.02]">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 sm:gap-0">
+              <div className="w-full sm:w-auto">
                 <p className="text-brand-accent text-sm font-bold mb-1 uppercase tracking-wider">Precio Sugerido (x3)</p>
-                <h3 className="text-4xl font-bold tracking-tight font-serif">${suggestedPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h3>
+                <h3 className="text-4xl sm:text-5xl font-bold tracking-tight font-serif break-all">${suggestedPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h3>
               </div>
-              <div className="text-right opacity-80">
-                <p className="text-xs">Margen Bruto</p>
-                <p className="font-bold">${profit.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+              <div className="text-left sm:text-right opacity-90 w-full sm:w-auto bg-white/10 sm:bg-transparent p-3 sm:p-0 rounded-xl sm:rounded-none">
+                <p className="text-xs uppercase tracking-wider text-brand-accent/80 sm:text-white/80">Margen Bruto</p>
+                <p className="font-bold text-xl sm:text-base text-brand-accent sm:text-white">${profit.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-white/10 flex justify-between items-center">
+            <div className="mt-5 sm:mt-6 pt-4 border-t border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 sm:gap-0">
               <span className="text-sm opacity-80">Costo Real de Producción:</span>
-              <span className="text-xl font-bold">${realCost.toFixed(2)}</span>
+              <span className="text-2xl sm:text-xl font-bold">${realCost.toFixed(2)}</span>
             </div>
           </div>
 
@@ -457,36 +457,38 @@ const Calculator: React.FC<Props> = ({ userId }) => {
           </div>
 
           {/* Info Card */}
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-brand-brown/10">
-            <h4 className="font-bold text-brand-brown mb-2 font-serif">{selectedRecipe?.isPromo ? 'Detalles de la Promoción' : 'Detalles de la Receta'}</h4>
-            <div className="text-sm text-brand-brown/80 grid grid-cols-2 gap-2">
-              {!selectedRecipe?.isPromo && <div>Yield Total: <span className="font-medium">{selectedRecipe?.totalYieldWeight}</span></div>}
-              <div className={selectedRecipe?.isPromo ? 'col-span-2' : ''}>Costo Total: <span className="font-medium">${selectedRecipe?.totalCost.toFixed(2)}</span></div>
-              {!selectedRecipe?.isPromo && <div className="col-span-2">Costo Base: <span className="font-medium">${selectedRecipe?.costPerGram.toFixed(4)} / gr</span></div>}
+          <div className="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-brand-brown/10">
+            <h4 className="font-bold text-brand-brown mb-3 font-serif">{selectedRecipe?.isPromo ? 'Detalles de la Promoción' : 'Detalles de la Receta'}</h4>
+            <div className="text-sm text-brand-brown/80 flex flex-col gap-2 sm:grid sm:grid-cols-2">
+              {!selectedRecipe?.isPromo && <div className="bg-brand-beige/30 p-2 sm:p-0 sm:bg-transparent rounded flex justify-between sm:block"><span>Yield Total:</span> <span className="font-medium sm:ml-1">{selectedRecipe?.totalYieldWeight}</span></div>}
+              <div className={`bg-brand-beige/30 p-2 sm:p-0 sm:bg-transparent rounded flex justify-between sm:block ${selectedRecipe?.isPromo ? 'col-span-2' : ''}`}><span>Costo Total:</span> <span className="font-medium sm:ml-1">${selectedRecipe?.totalCost.toFixed(2)}</span></div>
+              {!selectedRecipe?.isPromo && <div className="bg-brand-beige/30 p-2 sm:p-0 sm:bg-transparent rounded col-span-2 flex justify-between sm:block"><span>Costo Base:</span> <span className="font-medium sm:ml-1">${selectedRecipe?.costPerGram.toFixed(4)} / gr</span></div>}
             </div>
           </div>
 
           {/* PDF Ticket Button */}
-          <button
-            onClick={() => generateTicket(false)}
-            className="w-full bg-[#2C1810] text-white py-3 rounded-xl font-bold shadow-md hover:bg-black transition flex items-center justify-center gap-2"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            Generar Ticket PDF
-          </button>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => generateTicket(false)}
+              className="w-full bg-[#2C1810] text-white py-3 sm:py-4 rounded-xl font-bold shadow-md hover:bg-black transition flex items-center justify-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              Generar Ticket PDF
+            </button>
 
-          {/* Reseller PDF Ticket Button */}
-          <button
-            onClick={() => generateTicket(true)}
-            className="w-full bg-white text-brand-brown border-2 border-[#2C1810] py-3 rounded-xl font-bold shadow-md hover:bg-brand-brown/5 transition flex items-center justify-center gap-2"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            Generar Ticket Revendedor PDF
-          </button>
+            {/* Reseller PDF Ticket Button */}
+            <button
+              onClick={() => generateTicket(true)}
+              className="w-full bg-white text-brand-brown border-2 border-[#2C1810] py-3 sm:py-4 rounded-xl font-bold shadow-sm hover:bg-brand-brown/5 transition flex items-center justify-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              Generar Ticket Revendedor
+            </button>
+          </div>
         </div>
       )}
     </div>

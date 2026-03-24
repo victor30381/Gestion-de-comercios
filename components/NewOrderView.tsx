@@ -485,37 +485,42 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
             )}
 
             {/* Header */}
-            <div className="flex items-center p-4 border-b border-brand-brown/10 relative">
-                <button onClick={onBack} className="p-2 rounded-full hover:bg-brand-brown/10 text-brand-brown transition-colors absolute left-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-                </button>
-                <div className="w-full text-center"><h2 className="text-2xl font-serif font-bold text-brand-brown">{initialOrder ? (readOnly ? 'Detalles del Pedido' : 'Editar Pedido') : 'Nuevo Pedido'}</h2></div>
+            <div className="flex items-center p-5 sm:p-6 border-b border-brand-brown/10 relative bg-white/80 backdrop-blur-xl sticky top-0 z-20">
+                <div className="w-full text-center">
+                    <h2 className="text-xl sm:text-2xl font-serif font-black text-brand-brown tracking-tight flex items-center justify-center gap-3">
+                        <span className="text-2xl bg-brand-brown/5 p-2 rounded-xl border border-brand-brown/10 shadow-sm leading-none">
+                            {initialOrder ? (readOnly ? '📄' : '📝') : '🛍️'}
+                        </span>
+                        {initialOrder ? (readOnly ? 'Detalles del Pedido' : 'Editar Pedido') : 'Nuevo Pedido'}
+                    </h2>
+                </div>
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-8">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8 sm:space-y-10 bg-brand-cream/10 custom-scrollbar">
 
                 {/* 1. Select Client */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                     {/* Catalog Banner */}
                     {(initialOrder as any)?.source === 'catalog' && (
-                        <div className="bg-green-50/80 border border-green-200 p-4 rounded-xl mb-4 animate-fade-in">
-                            <h4 className="font-bold text-green-800 mb-3 flex items-center gap-2">
+                        <div className="bg-green-50/80 border border-green-200 p-5 rounded-2xl mb-4 animate-fade-in shadow-sm relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-green-200/40 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                            <h4 className="font-bold text-green-800 mb-3 flex items-center gap-2 text-lg">
                                 <span>🛒</span> Recibido desde el Catálogo
                             </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 text-sm text-green-900/80 bg-white/50 p-3 rounded-xl border border-green-100">
-                                <div><strong className="text-green-900">Nombre:</strong> {initialOrder!.clientName}</div>
-                                <div><strong className="text-green-900">Teléfono:</strong> {(initialOrder as any).clientPhone || '-'}</div>
-                                <div><strong className="text-green-900">Entrega:</strong> {(initialOrder as any).deliveryMethod === 'delivery' ? '🛵 Envío a Domicilio' : '🏪 Retiro en Local'}</div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm text-green-900/80 bg-white/70 p-4 rounded-xl border border-green-100 shadow-sm">
+                                <div><strong className="text-green-900 block text-xs uppercase opacity-80 mb-0.5">Nombre</strong> {initialOrder!.clientName}</div>
+                                <div><strong className="text-green-900 block text-xs uppercase opacity-80 mb-0.5">Teléfono</strong> {(initialOrder as any).clientPhone || '-'}</div>
+                                <div><strong className="text-green-900 block text-xs uppercase opacity-80 mb-0.5">Entrega</strong> {(initialOrder as any).deliveryMethod === 'delivery' ? '🛵 Envío a Domicilio' : '🏪 Retiro en Local'}</div>
                                 {(initialOrder as any).deliveryMethod === 'delivery' && (
-                                    <div><strong className="text-green-900">Dirección:</strong> {(initialOrder as any).clientAddress || '-'}</div>
+                                    <div><strong className="text-green-900 block text-xs uppercase opacity-80 mb-0.5">Dirección</strong> {(initialOrder as any).clientAddress || '-'}</div>
                                 )}
                                 {(initialOrder as any).clientNotes && (
-                                    <div className="md:col-span-2"><strong className="text-green-900">Preferencias:</strong> {(initialOrder as any).clientNotes}</div>
+                                    <div className="md:col-span-2 mt-1 p-3 bg-green-50 rounded-lg border border-green-100/50"><strong className="text-green-900 block text-xs uppercase opacity-80 mb-0.5">Preferencias</strong> {(initialOrder as any).clientNotes}</div>
                                 )}
                             </div>
                             {!selectedClientId && (
-                                <div className="flex flex-col md:flex-row gap-3 items-center mt-2">
+                                <div className="flex flex-col md:flex-row gap-3 items-center mt-4 border-t border-green-200/50 pt-4">
                                     <button
                                         onClick={() => {
                                             setNewClientName(initialOrder!.clientName);
@@ -523,30 +528,34 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                                             setNewClientAddress((initialOrder as any).clientAddress || '');
                                             setShowClientModal(true);
                                         }}
-                                        className="w-full md:w-auto px-5 py-2.5 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-colors shadow-sm flex items-center justify-center gap-2"
+                                        className="w-full md:w-auto px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-colors shadow-md flex items-center justify-center gap-2"
                                     >
-                                        <span>👤</span> Crear Nuevo Cliente
+                                        <span>👤</span> Crear Cliente desde Pedido
                                     </button>
-                                    <span className="text-xs text-green-900/60 font-medium">o selecciona un cliente existente abajo 👇</span>
+                                    <span className="text-sm text-green-900/60 font-medium">o vinculá a un cliente existente 👇</span>
                                 </div>
                             )}
                         </div>
                     )}
 
-                    <h3 className="text-lg font-bold text-brand-brown flex items-center gap-2">
-                        <span className="bg-brand-brown/10 w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span> Seleccionar Cliente
+                    <h3 className="text-sm font-bold text-brand-brown flex items-center gap-2 uppercase tracking-widest opacity-90 border-b border-brand-brown/10 pb-2">
+                        <span className="bg-brand-brown/10 w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span> 
+                        <span>Seleccionar Cliente</span>
                     </h3>
-                    <div className="flex gap-2">
-                        <div className="relative flex-1">
+                    <div className="flex gap-3">
+                        <div className="relative flex-1 group">
                             <select
                                 value={selectedClientId}
                                 onChange={(e) => setSelectedClientId(e.target.value)}
                                 disabled={readOnly}
-                                className={`w-full p-3 pr-10 rounded-xl border bg-brand-cream/30 outline-none text-brand-brown appearance-none disabled:opacity-70 disabled:bg-stone-100 ${!selectedClientId && (initialOrder as any)?.source === 'catalog' ? 'border-red-400 ring-2 ring-red-100' : 'border-brand-brown/20'}`}
+                                className={`w-full p-4 pr-10 rounded-xl border bg-white shadow-sm outline-none text-brand-brown appearance-none disabled:opacity-70 disabled:bg-stone-50 transition-shadow focus:ring-2 focus:ring-brand-accent/50 group-hover:shadow-md ${!selectedClientId && (initialOrder as any)?.source === 'catalog' ? 'border-red-400 ring-2 ring-red-100' : 'border-brand-brown/20'}`}
                             >
                                 <option value="">Buscar Cliente Existente...</option>
                                 {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
                             </select>
+                            <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-brand-brown/40 group-hover:text-brand-brown/70 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 15 12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" /></svg>
+                            </div>
                         </div>
                         {!readOnly && (
                             <button onClick={() => {
@@ -554,21 +563,22 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                                 setNewClientPhone('');
                                 setNewClientAddress('');
                                 setShowClientModal(true);
-                            }} className="bg-brand-brown text-white p-3 rounded-xl hover:bg-[#5D4229] shadow-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                            }} className="bg-brand-brown text-white px-5 py-4 rounded-xl hover:bg-[#5D4229] shadow-[0_4px_15px_rgba(93,66,41,0.2)] transition-colors flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
                             </button>
                         )}
                     </div>
                 </div>
 
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-brand-brown flex items-center gap-2">
-                        <span className="bg-brand-brown/10 w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span> Agregar Producto
+                    <h3 className="text-sm font-bold text-brand-brown flex items-center gap-2 uppercase tracking-widest opacity-90 border-b border-brand-brown/10 pb-2">
+                        <span className="bg-brand-brown/10 w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span> 
+                        <span>Agregar Productos</span>
                     </h3>
 
                     <div className="space-y-4">
                         {items.map((item, index) => (
-                            <div key={item.id} className="bg-brand-cream/20 p-4 rounded-xl border border-brand-brown/10 relative">
+                            <div key={item.id} className="bg-white p-5 rounded-2xl border border-brand-brown/10 relative shadow-[0_2px_15px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_25px_rgb(0,0,0,0.06)] transition-all">
                                 {items.length > 1 && !readOnly && (
                                     <button onClick={() => handleRemoveItem(item.id)} className="absolute -top-2 -right-2 bg-red-100 text-red-500 rounded-full p-1 shadow-sm hover:bg-red-200">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
@@ -576,13 +586,13 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                                 )}
 
                                 <div className="grid grid-cols-12 gap-3">
-                                    <div className="col-span-12 md:col-span-5">
-                                        <label className="block text-xs font-bold text-brand-brown/60 mb-1">Producto</label>
+                                    <div className="col-span-12 sm:col-span-5">
+                                        <label className="block text-xs font-bold text-brand-brown/60 mb-1.5 uppercase tracking-wider">Producto</label>
                                         <select
                                             value={item.recipeId || ''}
                                             onChange={(e) => handleItemChange(item.id, 'recipeId', e.target.value)}
                                             disabled={readOnly}
-                                            className="w-full p-2 rounded-lg border border-brand-brown/20 bg-white text-sm disabled:opacity-70 disabled:bg-stone-100"
+                                            className="w-full p-3 rounded-xl border border-brand-brown/20 bg-brand-cream/30 hover:bg-white text-sm disabled:opacity-70 disabled:bg-stone-50 transition-colors focus:ring-2 focus:ring-brand-accent/50 outline-none cursor-pointer"
                                         >
                                             <option value="">Seleccionar Receta...</option>
                                             {recipes.map(recipe => (
@@ -590,37 +600,37 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                                             ))}
                                         </select>
                                     </div>
-                                    <div className="col-span-4 md:col-span-3">
-                                        <label className="block text-xs font-bold text-brand-brown/60 mb-1">Peso (g) / Unid.</label>
+                                    <div className="col-span-4 sm:col-span-3">
+                                        <label className="block text-xs font-bold text-brand-brown/60 mb-1.5 uppercase tracking-wider">Peso(g)/Un</label>
                                         <input
                                             type="number"
                                             value={item.amount || ''}
                                             onChange={(e) => handleItemChange(item.id, 'amount', parseFloat(e.target.value))}
                                             placeholder="200"
                                             disabled={readOnly}
-                                            className="w-full p-2 rounded-lg border border-brand-brown/20 bg-white disabled:opacity-70 disabled:bg-stone-100"
+                                            className="w-full p-3 rounded-xl border border-brand-brown/20 bg-brand-cream/30 hover:bg-white disabled:opacity-70 disabled:bg-stone-50 transition-colors focus:ring-2 focus:ring-brand-accent/50 outline-none"
                                         />
                                     </div>
-                                    <div className="col-span-3 md:col-span-2">
-                                        <label className="block text-xs font-bold text-brand-brown/60 mb-1">Cant.</label>
+                                    <div className="col-span-3 sm:col-span-2">
+                                        <label className="block text-xs font-bold text-brand-brown/60 mb-1.5 uppercase tracking-wider">Cant.</label>
                                         <input
                                             type="number"
                                             min="1"
                                             value={item.quantity}
                                             onChange={(e) => handleItemChange(item.id, 'quantity', parseInt(e.target.value) || 1)}
                                             disabled={readOnly}
-                                            className="w-full p-2 rounded-lg border border-brand-brown/20 bg-white disabled:opacity-70 disabled:bg-stone-100"
+                                            className="w-full p-3 rounded-xl border border-brand-brown/20 bg-brand-cream/30 hover:bg-white disabled:opacity-70 disabled:bg-stone-50 transition-colors focus:ring-2 focus:ring-brand-accent/50 outline-none"
                                         />
                                     </div>
-                                    <div className="col-span-5 md:col-span-2">
-                                        <label className="block text-xs font-bold text-brand-brown/60 mb-1">Total</label>
+                                    <div className="col-span-5 sm:col-span-2">
+                                        <label className="block text-xs font-bold text-brand-brown/60 mb-1.5 uppercase tracking-wider">Total</label>
                                         <div className="relative">
                                             <input
                                                 type="number"
                                                 value={item.price || ''}
                                                 onChange={(e) => handleItemChange(item.id, 'price', parseFloat(e.target.value) || 0)}
                                                 disabled={readOnly}
-                                                className="w-full p-2 rounded-lg border border-brand-brown/20 bg-white font-bold text-brand-brown focus:ring-2 focus:ring-brand-accent/50 outline-none"
+                                                className="w-full p-3 rounded-xl border border-brand-brown/20 bg-brand-accent/10 font-black text-brand-brown focus:ring-2 focus:ring-brand-accent/50 outline-none"
                                             />
                                             {!!item.suggestedPrice && item.suggestedPrice > 0 && (
                                                 <div className="mt-1 text-[10px] text-brand-brown/60 font-medium px-1">
@@ -635,95 +645,103 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                     </div>
 
                     {!readOnly && (
-                        <button onClick={handleAddItem} className="w-full py-3 border-2 border-dashed border-brand-brown/30 rounded-xl text-brand-brown/70 font-bold hover:bg-brand-brown/5 hover:border-brand-brown/50 transition-all flex items-center justify-center gap-2">
-                            + Agregar otro producto
+                        <button onClick={handleAddItem} className="w-full py-4 border-2 border-dashed border-brand-brown/30 bg-white/50 rounded-2xl text-brand-brown font-bold hover:bg-brand-brown/5 hover:border-brand-brown/50 hover:shadow-sm transition-all flex items-center justify-center gap-2">
+                            <span>+</span> Añadir otro producto
                         </button>
                     )}
                 </div>
 
                 {/* 3. Delivery Details */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-brand-brown flex items-center gap-2">
-                        <span className="bg-brand-brown/10 w-6 h-6 rounded-full flex items-center justify-center text-sm">3</span> Detalles de Entrega
+                    <h3 className="text-sm font-bold text-brand-brown flex items-center gap-2 uppercase tracking-widest opacity-90 border-b border-brand-brown/10 pb-2">
+                        <span className="bg-brand-brown/10 w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span> 
+                        <span>Detalles de Entrega</span>
                     </h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-brand-brown/10 grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <label className="block text-sm font-bold text-brand-brown mb-1.5">Fecha de Entrega</label>
+                            <label className="block text-xs font-bold text-brand-brown/60 mb-1.5 uppercase tracking-wider">Fecha de Entrega</label>
                             <input
                                 type="date"
                                 value={deliveryDate}
                                 onChange={(e) => setDeliveryDate(e.target.value)}
                                 disabled={readOnly}
-                                className="w-full p-3 rounded-xl border border-brand-brown/20 focus:ring-2 focus:ring-brand-accent/50 outline-none bg-white font-medium disabled:opacity-70 disabled:bg-stone-100"
+                                className="w-full p-3 rounded-xl border border-brand-brown/20 focus:ring-2 focus:ring-brand-accent/50 outline-none bg-brand-cream/30 hover:bg-white text-brand-brown font-medium disabled:opacity-70 disabled:bg-stone-50 transition-colors"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-brand-brown mb-1.5">Hora de Entrega</label>
+                            <label className="block text-xs font-bold text-brand-brown/60 mb-1.5 uppercase tracking-wider">Hora de Entrega</label>
                             <input
                                 type="time"
                                 value={deliveryTime}
                                 onChange={(e) => setDeliveryTime(e.target.value)}
                                 disabled={readOnly}
-                                className="w-full p-3 rounded-xl border border-brand-brown/20 focus:ring-2 focus:ring-brand-accent/50 outline-none bg-white font-medium disabled:opacity-70 disabled:bg-stone-100"
+                                className="w-full p-3 rounded-xl border border-brand-brown/20 focus:ring-2 focus:ring-brand-accent/50 outline-none bg-brand-cream/30 hover:bg-white text-brand-brown font-medium disabled:opacity-70 disabled:bg-stone-50 transition-colors"
                                 placeholder="14:00"
                             />
                         </div>
-                    </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-brand-brown mb-1.5">Seña / Adelanto ($)</label>
-                        <input
-                            type="number"
-                            value={deposit || ''}
-                            onChange={(e) => setDeposit(parseFloat(e.target.value) || 0)}
-                            disabled={readOnly}
-                            className="w-full p-3 rounded-xl border border-brand-brown/20 focus:ring-2 focus:ring-brand-accent/50 outline-none bg-white text-lg font-medium disabled:opacity-70 disabled:bg-stone-100"
-                            placeholder="0"
-                        />
+                        <div className="md:col-span-2 pt-2 border-t border-brand-brown/5">
+                            <label className="block text-xs font-bold text-brand-brown/60 mb-1.5 uppercase tracking-wider">Seña / Adelanto ($)</label>
+                            <input
+                                type="number"
+                                value={deposit || ''}
+                                onChange={(e) => setDeposit(parseFloat(e.target.value) || 0)}
+                                disabled={readOnly}
+                                className="w-full max-w-xs p-3.5 rounded-xl border border-brand-brown/20 focus:ring-2 focus:ring-brand-accent/50 outline-none bg-white shadow-inner text-xl text-brand-brown font-bold disabled:opacity-70 disabled:bg-stone-50 transition-colors"
+                                placeholder="0"
+                            />
+                        </div>
                     </div>
                 </div>
 
                 {/* 4. Payment */}
-                <div className="space-y-3 bg-brand-brown/5 p-4 rounded-xl">
-                    <h3 className="text-lg font-bold text-brand-brown flex items-center gap-2">
-                        <span className="bg-brand-brown/10 w-6 h-6 rounded-full flex items-center justify-center text-sm">4</span> Pago
+                <div className="space-y-4">
+                    <h3 className="text-sm font-bold text-brand-brown flex items-center gap-2 uppercase tracking-widest opacity-90 border-b border-brand-brown/10 pb-2">
+                        <span className="bg-brand-brown/10 w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span> 
+                        <span>Resumen de Pago</span>
                     </h3>
 
 
-                    <div className="flex justify-between items-center text-sm pt-2 border-t border-brand-brown/10 mt-2">
-                        <span className="text-brand-brown/70">Total a Pagar:</span>
-                        <span className="font-bold text-brand-brown text-lg">${total.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                        <span className="text-brand-brown/70">Saldo Pendiente:</span>
-                        <span className="font-bold text-brand-accent text-lg">${pendingBalance.toLocaleString()}</span>
+                    <div className="bg-gradient-to-br from-brand-brown to-[#4A2E21] p-5 sm:p-6 rounded-2xl text-white shadow-xl relative overflow-hidden">
+                        <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+                        <div className="flex justify-between items-center text-sm md:text-base mb-3 opacity-90 relative">
+                            <span>Total de la Orden:</span>
+                            <span className="font-bold text-xl">${total.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-white relative pt-4 border-t border-white/20">
+                            <span className="text-sm md:text-base font-bold uppercase tracking-wider">Saldo Pendiente:</span>
+                            <span className="font-black text-2xl sm:text-3xl tracking-tight text-brand-accent drop-shadow-sm">${pendingBalance.toLocaleString()}</span>
+                        </div>
                     </div>
                 </div>
 
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-brand-brown/10 bg-brand-cream/30 flex gap-3">
+            <div className="p-4 sm:p-5 border-t border-brand-brown/10 bg-white shadow-[0_-10px_30px_rgba(0,0,0,0.03)] flex flex-col sm:flex-row gap-3 z-20">
                 {initialOrder && !readOnly && (
                     <button
                         onClick={handleDeleteOrder}
                         type="button"
-                        className="p-4 rounded-xl border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition-colors shadow-sm"
+                        className="p-4 rounded-xl border-2 border-red-100 bg-white text-red-500 hover:bg-red-50 hover:border-red-200 transition-colors shadow-sm"
                         title="Eliminar Pedido"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                     </button>
                 )}
                 {!readOnly && (
-                    <button onClick={() => handleSubmit(false)} disabled={isSubmitting} className="flex-1 bg-brand-brown text-white font-bold py-4 rounded-xl shadow-lg hover:bg-[#5D4229] disabled:opacity-50">
-                        {isSubmitting ? 'Guardando...' : (initialOrder ? 'Actualizar Pedido' : 'Confirmar Pedido')}
+                    <button onClick={() => handleSubmit(false)} disabled={isSubmitting} className="flex-1 bg-brand-brown text-white font-bold text-lg py-4 rounded-xl shadow-lg hover:bg-black hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-brand-brown">
+                        {isSubmitting ? 'Guardando...' : (initialOrder ? 'Actualizar Orden' : 'Confirmar Orden')}
                     </button>
                 )}
-                <button onClick={generateOrderTicket} className="flex-1 bg-brand-accent text-brand-brown font-bold py-4 rounded-xl shadow-lg hover:bg-[#E5DCD3] border border-brand-brown/20 flex items-center justify-center gap-2">
-                    Generar Ticket
+                <button onClick={generateOrderTicket} className="flex-1 warm-gradient-brown text-white font-bold text-lg py-4 rounded-xl shadow-lg hover:brightness-110 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    Ticket Imprimible
                 </button>
             </div>
         </div>
