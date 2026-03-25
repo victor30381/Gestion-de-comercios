@@ -162,7 +162,9 @@ const Calculator: React.FC<Props> = ({ userId }) => {
           if (selectedRecipe.isPromo) {
             factor = 1; // Para promos, los nutrientes ya son el valor total calculado
           } else if (portionWeight > 0 && selectedRecipe.totalYieldWeight > 0) {
-            factor = portionWeight / selectedRecipe.totalYieldWeight;
+            factor = portionWeight > selectedRecipe.totalYieldWeight 
+              ? 1 / selectedRecipe.totalYieldWeight 
+              : portionWeight / selectedRecipe.totalYieldWeight;
           } else if (weight > 0 && selectedRecipe.totalYieldWeight > 0) {
             factor = weight / selectedRecipe.totalYieldWeight;
           }

@@ -39,6 +39,7 @@ export interface Recipe {
   totalCost: number;
   costPerGram: number;
   nutritionalInfo?: NutritionalInfo;
+  manualNutritionalInfo?: NutritionalInfo;
   portionWeight?: number;
   conservation?: string;
   isPromo?: boolean;

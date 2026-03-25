@@ -213,6 +213,21 @@ const Recipes: React.FC<Props> = ({ userId }) => {
           autoFiber += (r.nutritionalInfo.fiber || 0) * factor;
         }
       });
+    } else {
+      ingredientsList.forEach(item => {
+        if (item.type === 'recipe') {
+          const r = savedRecipes.find(rr => rr.id === item.ingredientId);
+          const qty = parseFloat(item.quantityUsed);
+          if (r && r.nutritionalInfo && r.totalYieldWeight && !isNaN(qty) && r.totalYieldWeight > 0) {
+            const factor = qty / r.totalYieldWeight;
+            autoCalories += (r.nutritionalInfo.calories || 0) * factor;
+            autoProtein += (r.nutritionalInfo.protein || 0) * factor;
+            autoCarbs += (r.nutritionalInfo.carbs || 0) * factor;
+            autoFat += (r.nutritionalInfo.fat || 0) * factor;
+            autoFiber += (r.nutritionalInfo.fiber || 0) * factor;
+          }
+        }
+      });
     }
 
     const recipeData: Omit<Recipe, 'id'> = {
@@ -226,12 +241,21 @@ const Recipes: React.FC<Props> = ({ userId }) => {
       totalCost,
       costPerGram,
       nutritionalInfo: {
-        calories: isPromoMode ? autoCalories : (parseFloat(calories) || 0),
-        protein: isPromoMode ? autoProtein : (parseFloat(protein) || 0),
-        carbs: isPromoMode ? autoCarbs : (parseFloat(carbs) || 0),
-        fat: isPromoMode ? autoFat : (parseFloat(fat) || 0),
-        fiber: isPromoMode ? autoFiber : (parseFloat(fiber) || 0),
+        calories: isPromoMode ? autoCalories : autoCalories + (parseFloat(calories) || 0),
+        protein: isPromoMode ? autoProtein : autoProtein + (parseFloat(protein) || 0),
+        carbs: isPromoMode ? autoCarbs : autoCarbs + (parseFloat(carbs) || 0),
+        fat: isPromoMode ? autoFat : autoFat + (parseFloat(fat) || 0),
+        fiber: isPromoMode ? autoFiber : autoFiber + (parseFloat(fiber) || 0),
       },
+      ...(isPromoMode ? {} : {
+        manualNutritionalInfo: {
+          calories: parseFloat(calories) || 0,
+          protein: parseFloat(protein) || 0,
+          carbs: parseFloat(carbs) || 0,
+          fat: parseFloat(fat) || 0,
+          fiber: parseFloat(fiber) || 0,
+        }
+      }),
       portionWeight: parseFloat(portionWeight) || 0,
       conservation,
       // Catalog fields
@@ -292,11 +316,21 @@ const Recipes: React.FC<Props> = ({ userId }) => {
     setIsIngredientRecipe(!!recipe.isIngredient);
 
     // Set nutritional info
-    setCalories(recipe.nutritionalInfo?.calories.toString() || '');
-    setProtein(recipe.nutritionalInfo?.protein.toString() || '');
-    setCarbs(recipe.nutritionalInfo?.carbs.toString() || '');
-    setFat(recipe.nutritionalInfo?.fat.toString() || '');
-    setFiber(recipe.nutritionalInfo?.fiber.toString() || '');
+    const getManualOrFull = (field: keyof Omit<import('../types').NutritionalInfo, 'id'>) => {
+      if (recipe.manualNutritionalInfo && recipe.manualNutritionalInfo[field] !== undefined) {
+        return recipe.manualNutritionalInfo[field].toString();
+      }
+      if (!recipe.isPromo && recipe.nutritionalInfo && recipe.nutritionalInfo[field] !== undefined) {
+        return recipe.nutritionalInfo[field].toString();
+      }
+      return '';
+    };
+
+    setCalories(getManualOrFull('calories'));
+    setProtein(getManualOrFull('protein'));
+    setCarbs(getManualOrFull('carbs'));
+    setFat(getManualOrFull('fat'));
+    setFiber(getManualOrFull('fiber'));
     setPortionWeight(recipe.portionWeight?.toString() || '');
     setConservation(recipe.conservation || '');
 
@@ -386,6 +420,37 @@ const Recipes: React.FC<Props> = ({ userId }) => {
   };
 
   const currentTotal = calculateTotalCost();
+
+  const autoNutrients = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
+  if (isPromoMode) {
+    promoItemsList.forEach(item => {
+      const r = savedRecipes.find(rr => rr.id === item.recipeId);
+      const qty = parseFloat(item.quantityUsed);
+      if (r && r.nutritionalInfo && r.totalYieldWeight && !isNaN(qty) && r.totalYieldWeight > 0) {
+        const factor = qty / r.totalYieldWeight;
+        autoNutrients.calories += (r.nutritionalInfo.calories || 0) * factor;
+        autoNutrients.protein += (r.nutritionalInfo.protein || 0) * factor;
+        autoNutrients.carbs += (r.nutritionalInfo.carbs || 0) * factor;
+        autoNutrients.fat += (r.nutritionalInfo.fat || 0) * factor;
+        autoNutrients.fiber += (r.nutritionalInfo.fiber || 0) * factor;
+      }
+    });
+  } else {
+    ingredientsList.forEach(item => {
+      if (item.type === 'recipe') {
+        const r = savedRecipes.find(rr => rr.id === item.ingredientId);
+        const qty = parseFloat(item.quantityUsed);
+        if (r && r.nutritionalInfo && r.totalYieldWeight && !isNaN(qty) && r.totalYieldWeight > 0) {
+          const factor = qty / r.totalYieldWeight;
+          autoNutrients.calories += (r.nutritionalInfo.calories || 0) * factor;
+          autoNutrients.protein += (r.nutritionalInfo.protein || 0) * factor;
+          autoNutrients.carbs += (r.nutritionalInfo.carbs || 0) * factor;
+          autoNutrients.fat += (r.nutritionalInfo.fat || 0) * factor;
+          autoNutrients.fiber += (r.nutritionalInfo.fiber || 0) * factor;
+        }
+      }
+    });
+  }
 
   return (
     <div className="space-y-4 sm:space-y-8 animate-fade-in pb-20">
@@ -621,13 +686,16 @@ const Recipes: React.FC<Props> = ({ userId }) => {
           {/* Nutritional Info Section */}
           {!isPromoMode && (
             <div className="bg-brand-brown/5 p-4 rounded-xl border border-brand-brown/10">
-              <h3 className="text-md font-bold text-brand-brown mb-3 font-serif border-b border-brand-brown/10 pb-2">
-                Información Nutricional (TOTAL DE LA RECETA)
+              <h3 className="text-md font-bold text-brand-brown mb-1 font-serif">
+                Información Nutricional Adicional
               </h3>
+              <p className="text-xs text-brand-brown/70 mb-3 border-b border-brand-brown/10 pb-2">
+                Los valores de las sub-recetas utilizadas se suman automáticamente. Ingresa los valores correspondientes <strong>solo</strong> a los ingredientes básicos adicionales.
+              </p>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 mb-4">
                 <div>
-                  <label className="block text-xs font-bold text-brand-brown mb-1">Calorías Totales (Kcal)</label>
+                  <label className="block text-xs font-bold text-brand-brown mb-1">Calorías Extra (Kcal)</label>
                   <input
                     type="number"
                     value={calories}
@@ -637,7 +705,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-brand-brown mb-1">Grasas Totales (g)</label>
+                  <label className="block text-xs font-bold text-brand-brown mb-1">Grasas Extra (g)</label>
                   <input
                     type="number"
                     value={fat}
@@ -647,7 +715,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-brand-brown mb-1">Carbos Totales (g)</label>
+                  <label className="block text-xs font-bold text-brand-brown mb-1">Carbos Extra (g)</label>
                   <input
                     type="number"
                     value={carbs}
@@ -657,7 +725,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-brand-brown mb-1">Proteínas Totales (g)</label>
+                  <label className="block text-xs font-bold text-brand-brown mb-1">Proteínas Extra (g)</label>
                   <input
                     type="number"
                     value={protein}
@@ -667,7 +735,7 @@ const Recipes: React.FC<Props> = ({ userId }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-brand-brown mb-1">Fibra Total (g)</label>
+                  <label className="block text-xs font-bold text-brand-brown mb-1">Fibra Extra (g)</label>
                   <input
                     type="number"
                     value={fiber}
@@ -675,6 +743,33 @@ const Recipes: React.FC<Props> = ({ userId }) => {
                     className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
                     placeholder="0"
                   />
+                </div>
+              </div>
+
+              {/* Total preview */}
+              <div className="bg-white p-3 rounded-lg border border-brand-brown/20 mt-4 mb-4">
+                <h4 className="text-sm font-bold text-brand-brown mb-2">Total Calculado (Auto + Manual):</h4>
+                <div className="grid grid-cols-5 gap-0 text-center text-xs">
+                  <div>
+                    <span className="block font-bold">Kcal</span>
+                    <span className="text-brand-brown/80">{Math.round(autoNutrients.calories + (parseFloat(calories) || 0))}</span>
+                  </div>
+                  <div>
+                    <span className="block font-bold">Grasas</span>
+                    <span className="text-brand-brown/80">{Math.round((autoNutrients.fat + (parseFloat(fat) || 0)) * 10) / 10}g</span>
+                  </div>
+                  <div>
+                    <span className="block font-bold">Carbos</span>
+                    <span className="text-brand-brown/80">{Math.round((autoNutrients.carbs + (parseFloat(carbs) || 0)) * 10) / 10}g</span>
+                  </div>
+                  <div>
+                    <span className="block font-bold">Prote</span>
+                    <span className="text-brand-brown/80">{Math.round((autoNutrients.protein + (parseFloat(protein) || 0)) * 10) / 10}g</span>
+                  </div>
+                  <div>
+                    <span className="block font-bold">Fibra</span>
+                    <span className="text-brand-brown/80">{Math.round((autoNutrients.fiber + (parseFloat(fiber) || 0)) * 10) / 10}g</span>
+                  </div>
                 </div>
               </div>
 
@@ -698,6 +793,38 @@ const Recipes: React.FC<Props> = ({ userId }) => {
                     className="w-full p-2 rounded-lg border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-brand-brown bg-white placeholder-brand-brown/40"
                     placeholder="Ej. Heladera: 7 días"
                   />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isPromoMode && (
+            <div className="bg-brand-brown/5 p-4 rounded-xl border border-brand-brown/10">
+              <h3 className="text-md font-bold text-brand-brown mb-3 font-serif border-b border-brand-brown/10 pb-2">
+                Información Nutricional (Calculada Automáticamente)
+              </h3>
+              <div className="bg-white p-3 rounded-lg border border-brand-brown/20 mt-2 mb-2">
+                <div className="grid grid-cols-5 gap-0 text-center text-xs">
+                  <div>
+                    <span className="block font-bold">Kcal</span>
+                    <span className="text-brand-brown/80">{Math.round(autoNutrients.calories)}</span>
+                  </div>
+                  <div>
+                    <span className="block font-bold">Grasas</span>
+                    <span className="text-brand-brown/80">{Math.round(autoNutrients.fat * 10) / 10}g</span>
+                  </div>
+                  <div>
+                    <span className="block font-bold">Carbos</span>
+                    <span className="text-brand-brown/80">{Math.round(autoNutrients.carbs * 10) / 10}g</span>
+                  </div>
+                  <div>
+                    <span className="block font-bold">Prote</span>
+                    <span className="text-brand-brown/80">{Math.round(autoNutrients.protein * 10) / 10}g</span>
+                  </div>
+                  <div>
+                    <span className="block font-bold">Fibra</span>
+                    <span className="text-brand-brown/80">{Math.round(autoNutrients.fiber * 10) / 10}g</span>
+                  </div>
                 </div>
               </div>
             </div>

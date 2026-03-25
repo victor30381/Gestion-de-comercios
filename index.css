@@ -110,7 +110,7 @@
 .animate-marquee {
   display: inline-block;
   white-space: nowrap;
-  animation: marquee 16s linear infinite;
+  animation: marquee 30s linear infinite;
   will-change: transform;
 }
 

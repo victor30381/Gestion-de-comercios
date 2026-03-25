@@ -102,14 +102,16 @@ const ProductCard: React.FC<{
                         <h3 className="font-serif font-bold text-lg text-brand-brown mb-1">{recipe.name}</h3>
                         
                         {/* Nutritional info */}
-                        {recipe.nutritionalInfo && (recipe.portionWeight || 0) > 0 && (
+                        {recipe.nutritionalInfo && (
                             <div className="mb-3 bg-brand-brown/5 rounded-xl p-3 border border-brand-brown/10 shadow-sm mt-3">
                                 <div className="text-[10px] font-bold text-brand-brown/60 uppercase tracking-widest mb-2 flex justify-between items-center">
                                     <span>Valores Nutricionales</span>
-                                    <span className="bg-white/60 px-2 py-0.5 rounded-md border border-brand-brown/5">Porción: {recipe.portionWeight}g</span>
+                                    <span className="bg-white/60 px-2 py-0.5 rounded-md border border-brand-brown/5">{recipe.isPromo ? 'Promoción Completa' : (recipe.portionWeight ? `Porción: ${recipe.portionWeight}g` : 'Receta Entera')}</span>
                                 </div>
                                 {(() => {
-                                    const factor = recipe.portionWeight! / recipe.totalYieldWeight;
+                                    const factor = recipe.isPromo ? 1 : (!recipe.portionWeight ? 1 : (recipe.portionWeight > recipe.totalYieldWeight 
+                                        ? 1 / recipe.totalYieldWeight 
+                                        : recipe.portionWeight / recipe.totalYieldWeight));
                                     const cal = Math.round((recipe.nutritionalInfo?.calories || 0) * factor);
                                     const prot = Math.round((recipe.nutritionalInfo?.protein || 0) * factor);
                                     const carbs = Math.round((recipe.nutritionalInfo?.carbs || 0) * factor);
