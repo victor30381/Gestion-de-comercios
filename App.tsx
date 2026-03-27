@@ -161,7 +161,7 @@ function App() {
             {authError && <p className="text-red-600 text-center text-sm bg-red-50/80 backdrop-blur p-3 rounded-xl border border-red-100">{authError}</p>}
 
             <button type="submit" className="w-full warm-gradient-brown text-white py-4 rounded-xl font-bold font-serif text-lg btn-glow shadow-lg shadow-brand-brown/20 transition-all duration-300">
-              {isRegistering ? 'Crear Cuenta' : 'Ingresar al Dashboard'}
+              {isRegistering ? 'Crear Cuenta' : 'Ingresar a Inicio'}
             </button>
           </form>
 

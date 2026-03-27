@@ -22,12 +22,12 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, setActiveTab
 
     const getTitle = () => {
         switch (activeTab) {
-            case 'dashboard': return 'Dashboard';
+            case 'dashboard': return 'Inicio';
             case 'calculator': return 'Calculadora Maestra';
             case 'orders': return 'Gestión de Pedidos';
             case 'stock': return 'Control de Stock';
             case 'profile': return 'Perfil';
-            default: return 'Dashboard';
+            default: return 'Inicio';
         }
     };
 
