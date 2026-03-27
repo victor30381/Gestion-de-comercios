@@ -224,6 +224,8 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
     const [shopName, setShopName] = useState('');
     const [shopLogo, setShopLogo] = useState('');
     const [shopWhatsapp, setShopWhatsapp] = useState('');
+    const [shopInstagram, setShopInstagram] = useState('');
+    const [shopFacebook, setShopFacebook] = useState('');
     const [sections, setSections] = useState<string[]>([]);
     
     // Search and Filter state
@@ -257,6 +259,8 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                     setShopName(data.companyName || 'Tienda');
                     setShopLogo(data.logoUrl || '');
                     setShopWhatsapp(data.whatsappPhone || '');
+                    setShopInstagram(data.instagram || '');
+                    setShopFacebook(data.facebook || '');
                     setSections(data.catalogSections || []);
                 }
             } catch (err) {
@@ -698,18 +702,30 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                     <div className="flex flex-col items-center md:items-start">
                         <h3 className="font-bold text-white mb-6 uppercase tracking-[0.2em] text-sm">Contacto Rápido</h3>
                         <ul className="space-y-3 w-full max-w-[200px]">
+                            {shopInstagram && (
                             <li>
-                                <a href="https://instagram.com/alternativaketo" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-brand-brown hover:bg-white transition-colors bg-white/10 py-3 px-5 rounded-2xl border border-white/20 w-full font-bold">
+                                <a href={`https://instagram.com/${shopInstagram}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-brand-brown hover:bg-white transition-colors bg-white/10 py-3 px-5 rounded-2xl border border-white/20 w-full font-bold">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-                                    @alternativaketo
+                                    @{shopInstagram}
                                 </a>
                             </li>
+                            )}
+                            {shopFacebook && (
                             <li>
-                                <a href={`https://wa.me/${shopWhatsapp || '5491132427375'}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-brand-brown hover:bg-brand-accent transition-colors bg-brand-accent/20 py-3 px-5 rounded-2xl border border-brand-accent/50 w-full text-white font-bold">
+                                <a href={shopFacebook.startsWith('http') ? shopFacebook : `https://facebook.com/${shopFacebook}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-brand-brown hover:bg-white transition-colors bg-white/10 py-3 px-5 rounded-2xl border border-white/20 w-full font-bold">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+                                    Facebook
+                                </a>
+                            </li>
+                            )}
+                            {shopWhatsapp && (
+                            <li>
+                                <a href={`https://wa.me/${shopWhatsapp}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-brand-brown hover:bg-brand-accent transition-colors bg-brand-accent/20 py-3 px-5 rounded-2xl border border-brand-accent/50 w-full text-white font-bold">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                                     WhatsApp
                                 </a>
                             </li>
+                            )}
                         </ul>
                     </div>
                 </div>

@@ -144,5 +144,6 @@ export interface UserProfile {
   whatsappPhone?: string; // New field for WhatsApp notifications
   themeColors?: ThemeColors;
   logoUrl?: string;
+  logoBase64?: string; // Pre-generated base64 for PDF tickets (avoids CORS)
   catalogSections?: string[];
 }

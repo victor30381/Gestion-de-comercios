@@ -19,9 +19,20 @@ interface ThemeContextType {
   setThemeLocal: (theme: ThemeColors) => void;
   profileName: string;
   logoUrl: string | null;
+  logoBase64: string;
+  companyName: string;
+  instagram: string;
 }
 
-const ThemeContext = createContext<ThemeContextType>({ theme: defaultTheme, setThemeLocal: () => {}, profileName: '', logoUrl: null });
+const ThemeContext = createContext<ThemeContextType>({
+  theme: defaultTheme,
+  setThemeLocal: () => {},
+  profileName: '',
+  logoUrl: null,
+  logoBase64: '',
+  companyName: '',
+  instagram: '',
+});
 
 export const useTheme = () => useContext(ThemeContext);
 
@@ -29,12 +40,18 @@ export const ThemeProvider: React.FC<{ userId?: string, children: React.ReactNod
   const [theme, setTheme] = useState<ThemeColors>(defaultTheme);
   const [profileName, setProfileName] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoBase64, setLogoBase64] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [instagram, setInstagram] = useState('');
 
   useEffect(() => {
     if (!userId) {
       setTheme(defaultTheme);
       setProfileName('');
       setLogoUrl(null);
+      setLogoBase64('');
+      setCompanyName('');
+      setInstagram('');
       return;
     }
 
@@ -61,12 +78,18 @@ export const ThemeProvider: React.FC<{ userId?: string, children: React.ReactNod
           updateFavicon(data.logoUrl);
         } else {
           setLogoUrl(null);
-          updateFavicon(null); // Or default reset if you prefer
+          updateFavicon(null);
         }
+        setLogoBase64(data.logoBase64 || '');
+        setCompanyName(data.companyName || '');
+        setInstagram(data.instagram || '');
       } else {
         setTheme(defaultTheme);
         setProfileName('');
         setLogoUrl(null);
+        setLogoBase64('');
+        setCompanyName('');
+        setInstagram('');
         updateFavicon(null);
       }
     }, (error) => {
@@ -109,7 +132,7 @@ export const ThemeProvider: React.FC<{ userId?: string, children: React.ReactNod
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, setThemeLocal, profileName, logoUrl }}>
+    <ThemeContext.Provider value={{ theme, setThemeLocal, profileName, logoUrl, logoBase64, companyName, instagram }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -3,12 +3,18 @@ import { collection, query, where, onSnapshot, QuerySnapshot, DocumentData } fro
 import { db } from '../firebase';
 import { Recipe, Ingredient } from '../types';
 import jsPDF from 'jspdf';
+import { useTheme } from './ThemeContext';
 
 interface Props {
   userId: string;
 }
 
 const Calculator: React.FC<Props> = ({ userId }) => {
+  // Get profile data from ThemeContext (real-time updates via onSnapshot)
+  const { logoBase64: shopLogoBase64, companyName, instagram } = useTheme();
+  const shopName = companyName || 'Alternativa Keto';
+  const shopInstagram = instagram || 'alternativaketo';
+
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [selectedRecipeId, setSelectedRecipeId] = useState('');
@@ -299,7 +305,7 @@ const Calculator: React.FC<Props> = ({ userId }) => {
           currentY += 5;
           doc.setFontSize(9);
           doc.setFont("helvetica", "normal");
-          doc.text("@alternativaketo", 40, currentY, { align: "center" });
+          doc.text(`@${shopInstagram}`, 40, currentY, { align: "center" });
 
           if (isReseller && ingredients.length > 0) {
             const recipeIngredients = selectedRecipe.ingredients.map(ri => {
@@ -347,32 +353,42 @@ const Calculator: React.FC<Props> = ({ userId }) => {
         return;
       }
 
-      const img = new Image();
-      // Use proper base URL for GitHub Pages / Dev
-      // Remove trailing slash if present to avoid double slash, though usually fine
-      const logoPath = `${import.meta.env.BASE_URL}logo.png`;
-      console.log("Loading logo from:", logoPath);
-      img.src = logoPath;
-
-      img.onload = () => {
-        try {
-          // Original Logo Layout
-          // Logo resized to 50x50mm and centered (80-50)/2 = 15
-          // FAST compression for basic optimization without quality loss
-          doc.addImage(img, 'PNG', 15, 5, 50, 50, undefined, 'FAST');
-          drawContent(true);
-        } catch (imgErr: any) {
-          console.error("Error adding image:", imgErr);
-          // If image adds fail, try content without logo
+      // Load logo for PDF
+      if (shopLogoBase64) {
+        // Use the pre-stored base64 logo (avoids CORS issues with Firebase Storage)
+        const logoImg = new Image();
+        logoImg.onload = () => {
+          try {
+            doc.addImage(logoImg, 'PNG', 15, 5, 50, 50, undefined, 'FAST');
+            drawContent(true);
+          } catch (imgErr: any) {
+            console.error("Error adding image:", imgErr);
+            drawContent(false);
+          }
+        };
+        logoImg.onerror = () => {
+          console.warn("Logo base64 decode failed");
           drawContent(false);
-        }
-      };
-
-      img.onerror = (e) => {
-        console.warn("Logo load failed", e);
-        // Fallback to no-logo layout
-        drawContent(false);
-      };
+        };
+        logoImg.src = shopLogoBase64;
+      } else {
+        // Fallback: use the static local logo file
+        const logoImg = new Image();
+        logoImg.src = `${import.meta.env.BASE_URL}logo.png`;
+        logoImg.onload = () => {
+          try {
+            doc.addImage(logoImg, 'PNG', 15, 5, 50, 50, undefined, 'FAST');
+            drawContent(true);
+          } catch (imgErr: any) {
+            console.error("Error adding image:", imgErr);
+            drawContent(false);
+          }
+        };
+        logoImg.onerror = () => {
+          console.warn("Static logo load failed");
+          drawContent(false);
+        };
+      }
 
     } catch (err: any) {
       console.error("PDF Generation Error:", err);

@@ -68,6 +68,34 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
     setThemeLocal(newTheme);
   };
 
+  // Helper: resize an image file to a small base64 JPEG for PDF usage
+  const createLogoBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_SIZE = 300; // 300x300 px for good quality in PDF tickets
+          let w = img.width, h = img.height;
+          if (w > h) { h = Math.round((h / w) * MAX_SIZE); w = MAX_SIZE; }
+          else { w = Math.round((w / h) * MAX_SIZE); h = MAX_SIZE; }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d')!;
+          // Keep transparent background (PNG format)
+          ctx.clearRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = reject;
+        img.src = ev.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0 || !user) return;
     const file = e.target.files[0];
@@ -81,11 +109,19 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
       
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
+
+      // Generate a small base64 version for PDF tickets (avoids CORS issues)
+      let logoBase64 = '';
+      try {
+        logoBase64 = await createLogoBase64(file);
+      } catch (b64Err) {
+        console.warn('Could not generate logo base64:', b64Err);
+      }
       
       setProfileData(prev => ({ ...prev, logoUrl: downloadURL }));
       
-      // Auto-save the logo to Firestore so it reflects globally instantly
-      await setDoc(doc(db, 'userProfiles', user.uid), { logoUrl: downloadURL }, { merge: true });
+      // Auto-save the logo URL and base64 to Firestore so it reflects globally instantly
+      await setDoc(doc(db, 'userProfiles', user.uid), { logoUrl: downloadURL, logoBase64 }, { merge: true });
       
       setSaveMessage({ type: 'success', text: 'Logo subido y actualizado correctamente.' });
     } catch (error: any) {
@@ -190,7 +226,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
                   onClick={async () => {
                     setProfileData(prev => ({ ...prev, logoUrl: '' }));
                     if (user) {
-                      await setDoc(doc(db, 'userProfiles', user.uid), { logoUrl: '' }, { merge: true });
+                      await setDoc(doc(db, 'userProfiles', user.uid), { logoUrl: '', logoBase64: '' }, { merge: true });
                     }
                   }}
                   className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm shadow-md hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"

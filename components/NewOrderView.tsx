@@ -3,6 +3,7 @@ import { db } from '../firebase';
 import { collection, query, where, onSnapshot, addDoc, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { Client, OrderItem, Order, Recipe } from '../types';
 import jsPDF from 'jspdf';
+import { useTheme } from './ThemeContext';
 
 interface NewOrderViewProps {
     userId: string;
@@ -19,6 +20,11 @@ interface LocalOrderItem extends OrderItem {
 }
 
 const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrder, readOnly, initialDate }) => {
+    // Get profile data from ThemeContext (real-time updates via onSnapshot)
+    const { logoBase64: shopLogoBase64, companyName, instagram } = useTheme();
+    const shopName = companyName || 'Alternativa Keto';
+    const shopInstagram = instagram || 'alternativaketo';
+
     // Data State
     const [clients, setClients] = useState<Client[]>([]);
     const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -221,7 +227,7 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                     // Shop Name
                     doc.setFontSize(16);
                     doc.setFont("helvetica", "bold");
-                    doc.text("Alternativa Keto", 40, headerY, { align: "center" });
+                    doc.text(shopName, 40, headerY, { align: "center" });
 
                     // Divider
                     doc.setLineWidth(0.5);
@@ -347,7 +353,7 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                     // Handle Text
                     doc.setFont("helvetica", "bold");
                     doc.setFontSize(10);
-                    doc.text("@alternativaketo", startX + iconSize + 2, iconY + 5);
+                    doc.text(`@${shopInstagram}`, startX + iconSize + 2, iconY + 5);
 
                     // Output: Open in New Tab
                     const pdfBlob = doc.output('blob');
@@ -367,23 +373,32 @@ const NewOrderView: React.FC<NewOrderViewProps> = ({ userId, onBack, initialOrde
                 }
             };
 
-            const img = new Image();
-            // Use import.meta.env.BASE_URL for correct path resolution
-            const logoPath = `${import.meta.env.BASE_URL}logo.png`;
-            img.src = logoPath;
-
-            img.onload = () => {
-                // Add Logo - Smaller and Centered
-                // Page width 80. Center is 40.
-                // Size 45x45. X = 40 - (45/2) = 17.5
-                doc.addImage(img, 'PNG', 17.5, 5, 45, 45, undefined, 'FAST');
-                drawContent(true);
-            };
-
-            img.onerror = () => {
-                console.warn("Logo load failed");
-                drawContent(false);
-            };
+            // Load logo for PDF
+            if (shopLogoBase64) {
+                // Use the pre-stored base64 logo (avoids CORS issues with Firebase Storage)
+                const img = new Image();
+                img.onload = () => {
+                    doc.addImage(img, 'PNG', 17.5, 5, 45, 45, undefined, 'FAST');
+                    drawContent(true);
+                };
+                img.onerror = () => {
+                    console.warn("Logo base64 decode failed");
+                    drawContent(false);
+                };
+                img.src = shopLogoBase64;
+            } else {
+                // Fallback: use the static local logo file
+                const img = new Image();
+                img.src = `${import.meta.env.BASE_URL}logo.png`;
+                img.onload = () => {
+                    doc.addImage(img, 'PNG', 17.5, 5, 45, 45, undefined, 'FAST');
+                    drawContent(true);
+                };
+                img.onerror = () => {
+                    console.warn("Static logo load failed");
+                    drawContent(false);
+                };
+            }
 
         } catch (err: any) {
             console.error("PDF Init Error:", err);
