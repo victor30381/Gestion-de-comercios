@@ -124,40 +124,40 @@
 
 /* Glassmorphism Card */
 .glass-card {
-  background: rgba(255, 255, 255, 0.65);
+  background: color-mix(in srgb, var(--color-white-custom) 70%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.45);
+  border: 1px solid color-mix(in srgb, var(--color-white-custom) 45%, transparent);
   box-shadow:
-    0 4px 24px rgba(93, 58, 41, 0.06),
-    0 1px 3px rgba(93, 58, 41, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    0 4px 24px color-mix(in srgb, var(--color-text-main) 6%, transparent),
+    0 1px 3px color-mix(in srgb, var(--color-text-main) 4%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-white-custom) 60%, transparent);
 }
 
 .glass-card-strong {
-  background: rgba(255, 255, 255, 0.78);
+  background: color-mix(in srgb, var(--color-white-custom) 85%, transparent);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  border: 1px solid color-mix(in srgb, var(--color-white-custom) 55%, transparent);
   box-shadow:
-    0 8px 32px rgba(93, 58, 41, 0.08),
-    0 2px 8px rgba(93, 58, 41, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    0 8px 32px color-mix(in srgb, var(--color-text-main) 8%, transparent),
+    0 2px 8px color-mix(in srgb, var(--color-text-main) 4%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-white-custom) 70%, transparent);
 }
 
 /* Warm Gradient Backgrounds */
 .warm-gradient-bg {
-  background: linear-gradient(135deg, #F5F0EB 0%, #FDFBF7 30%, #F0E6DA 60%, #F5F0EB 100%);
+  background: linear-gradient(135deg, var(--color-brand-beige) 0%, var(--color-brand-cream) 30%, var(--color-brand-beige) 60%, var(--color-brand-cream) 100%);
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
 }
 
 .warm-gradient-accent {
-  background: linear-gradient(135deg, #D4A373 0%, #C4956A 50%, #B8845E 100%);
+  background: linear-gradient(135deg, var(--color-brand-accent) 0%, color-mix(in srgb, var(--color-brand-accent) 80%, black) 100%);
 }
 
 .warm-gradient-brown {
-  background: linear-gradient(135deg, #5D3A29 0%, #7A4E3A 50%, #5D3A29 100%);
+  background: linear-gradient(135deg, var(--color-brand-brown) 0%, color-mix(in srgb, var(--color-brand-brown) 85%, black) 100%);
 }
 
 /* Button Glow */
@@ -180,8 +180,8 @@
 /* Premium Input Focus */
 .input-premium:focus {
   box-shadow:
-    0 0 0 3px rgba(212, 163, 115, 0.2),
-    0 2px 8px rgba(212, 163, 115, 0.1),
+    0 0 0 3px color-mix(in srgb, var(--color-brand-accent) 20%, transparent),
+    0 2px 8px color-mix(in srgb, var(--color-brand-accent) 10%, transparent),
     inset 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
@@ -207,7 +207,7 @@
 
 /* Warm gradient text */
 .text-gradient-warm {
-  background: linear-gradient(135deg, #5D3A29 0%, #8B5E3C 40%, #D4A373 100%);
+  background: linear-gradient(135deg, var(--color-brand-brown) 0%, color-mix(in srgb, var(--color-brand-brown) 50%, var(--color-brand-accent)) 40%, var(--color-brand-accent) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -216,7 +216,7 @@
 /* Decorative line */
 .decorative-line {
   height: 3px;
-  background: linear-gradient(90deg, transparent, #D4A373, transparent);
+  background: linear-gradient(90deg, transparent, var(--color-brand-accent), transparent);
   border-radius: 999px;
 }
 
@@ -226,7 +226,7 @@
 }
 
 .table-row-premium:hover {
-  background: rgba(212, 163, 115, 0.06);
+  background: color-mix(in srgb, var(--color-brand-accent) 6%, transparent);
   transform: scale(1.005);
 }
 
@@ -240,12 +240,12 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(93, 58, 41, 0.15);
+  background-color: color-mix(in srgb, var(--color-text-main) 15%, transparent);
   border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(93, 58, 41, 0.3);
+  background-color: color-mix(in srgb, var(--color-text-main) 30%, transparent);
 }
 
 /* Global scrollbar */
@@ -258,12 +258,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(93, 58, 41, 0.12);
+  background-color: color-mix(in srgb, var(--color-text-main) 12%, transparent);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(93, 58, 41, 0.25);
+  background-color: color-mix(in srgb, var(--color-text-main) 25%, transparent);
 }
 
 /* ===== BODY BASE ===== */
@@ -272,3 +272,28 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* ===== COMPATIBILITY FOR CUSTOM THEMES ===== */
+.text-brand-brown { color: var(--color-text-main) !important; }
+.text-brand-brown\/40 { color: color-mix(in srgb, var(--color-text-main) 40%, transparent) !important; }
+.text-brand-brown\/60 { color: color-mix(in srgb, var(--color-text-main) 60%, transparent) !important; }
+.text-brand-brown\/70 { color: color-mix(in srgb, var(--color-text-main) 70%, transparent) !important; }
+.text-brand-brown\/80 { color: color-mix(in srgb, var(--color-text-main) 80%, transparent) !important; }
+.text-stone-500 { color: var(--color-text-muted) !important; }
+
+.bg-brand-brown { background-color: var(--color-brand-brown) !important; }
+.bg-brand-brown\/5 { background-color: color-mix(in srgb, var(--color-text-main) 5%, transparent) !important; }
+.bg-brand-brown\/10 { background-color: color-mix(in srgb, var(--color-text-main) 10%, transparent) !important; }
+.bg-brand-brown\/20 { background-color: color-mix(in srgb, var(--color-text-main) 20%, transparent) !important; }
+
+.border-brand-brown\/5 { border-color: color-mix(in srgb, var(--color-text-main) 5%, transparent) !important; }
+.border-brand-brown\/10 { border-color: color-mix(in srgb, var(--color-text-main) 10%, transparent) !important; }
+.border-brand-brown\/20 { border-color: color-mix(in srgb, var(--color-text-main) 20%, transparent) !important; }
+
+.bg-white { background-color: var(--color-white-custom) !important; }
+.bg-white\/50 { background-color: color-mix(in srgb, var(--color-white-custom) 50%, transparent) !important; }
+.bg-white\/60 { background-color: color-mix(in srgb, var(--color-white-custom) 60%, transparent) !important; }
+.bg-white\/70 { background-color: color-mix(in srgb, var(--color-white-custom) 70%, transparent) !important; }
+.bg-white\/80 { background-color: color-mix(in srgb, var(--color-white-custom) 80%, transparent) !important; }
+.bg-white\/90 { background-color: color-mix(in srgb, var(--color-white-custom) 90%, transparent) !important; }
+.bg-white\/95 { background-color: color-mix(in srgb, var(--color-white-custom) 95%, transparent) !important; }

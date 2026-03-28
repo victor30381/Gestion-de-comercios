@@ -46,7 +46,16 @@ export const ThemeProvider: React.FC<{ userId?: string, children: React.ReactNod
 
   useEffect(() => {
     if (!userId) {
-      setTheme(defaultTheme);
+      const savedTheme = localStorage.getItem('savedThemeColors');
+      if (savedTheme) {
+        try {
+          setTheme({ ...defaultTheme, ...JSON.parse(savedTheme) });
+        } catch (e) {
+          setTheme(defaultTheme);
+        }
+      } else {
+        setTheme(defaultTheme);
+      }
       setProfileName('');
       setLogoUrl(null);
       setLogoBase64('');
@@ -62,8 +71,10 @@ export const ThemeProvider: React.FC<{ userId?: string, children: React.ReactNod
         const data = docSnap.data();
         if (data.themeColors) {
           setTheme({ ...defaultTheme, ...data.themeColors });
+          localStorage.setItem('savedThemeColors', JSON.stringify(data.themeColors));
         } else {
           setTheme(defaultTheme);
+          localStorage.removeItem('savedThemeColors');
         }
         if (data.displayName) {
           setProfileName(data.displayName);

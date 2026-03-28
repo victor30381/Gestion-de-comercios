@@ -6,6 +6,58 @@ import { db, storage } from '../firebase';
 import { useTheme, defaultTheme } from './ThemeContext';
 import { ThemeColors, UserProfile } from '../types';
 
+const colorPresets: { name: string, colors: ThemeColors }[] = [
+  { name: "1. Clásico (Keto)", colors: defaultTheme },
+  {
+    name: "2. Oscuro Moderno",
+    colors: {
+      primary: '#D4A373',
+      secondary: '#1A1C20',
+      accent: '#E0A96D',
+      background1: '#24262B',
+      background2: '#1F2125',
+      textMain: '#F8F9FA',
+      textMuted: '#A0A4AB',
+    }
+  },
+  {
+    name: "3. Naturaleza Fresca",
+    colors: {
+      primary: '#2D4A22',
+      secondary: '#EBF4E5',
+      accent: '#6A994E',
+      background1: '#F6F9F4',
+      background2: '#ffffff',
+      textMain: '#1B2C14',
+      textMuted: '#6B7A66',
+    }
+  },
+  {
+    name: "4. Dulce Pastel",
+    colors: {
+      primary: '#B56576',
+      secondary: '#FDF0F3',
+      accent: '#E5989B',
+      background1: '#FFF8F9',
+      background2: '#ffffff',
+      textMain: '#5E313D',
+      textMuted: '#96747D',
+    }
+  },
+  {
+    name: "5. Elegancia Azul",
+    colors: {
+      primary: '#1D3557',
+      secondary: '#F1F5F9',
+      accent: '#E63946',
+      background1: '#F8FAFC',
+      background2: '#ffffff',
+      textMain: '#0F172A',
+      textMuted: '#64748B',
+    }
+  }
+];
+
 interface ProfileViewProps {
   user: User | null;
 }
@@ -118,7 +170,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
         console.warn('Could not generate logo base64:', b64Err);
       }
       
-      setProfileData(prev => ({ ...prev, logoUrl: downloadURL }));
+      setProfileData(prev => ({ ...prev, logoUrl: downloadURL, logoBase64 }));
       
       // Auto-save the logo URL and base64 to Firestore so it reflects globally instantly
       await setDoc(doc(db, 'userProfiles', user.uid), { logoUrl: downloadURL, logoBase64 }, { merge: true });
@@ -224,7 +276,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
                 <button
                   type="button"
                   onClick={async () => {
-                    setProfileData(prev => ({ ...prev, logoUrl: '' }));
+                    setProfileData(prev => ({ ...prev, logoUrl: '', logoBase64: '' }));
                     if (user) {
                       await setDoc(doc(db, 'userProfiles', user.uid), { logoUrl: '', logoBase64: '' }, { merge: true });
                     }
@@ -344,7 +396,35 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
                   Restablecer
                 </button>
             </div>
+
+            <div className="mb-6 mt-2 animate-fade-in-up">
+               <h4 className="text-sm font-bold text-brand-brown uppercase tracking-wider mb-4">Estilos Preestablecidos Rápidos</h4>
+               <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 custom-scrollbar custom-scrollbar-thin">
+                 {colorPresets.map((preset) => {
+                   const isActive = localTheme.primary === preset.colors.primary && localTheme.secondary === preset.colors.secondary;
+                   return (
+                     <button
+                       key={preset.name}
+                       type="button"
+                       onClick={() => {
+                          setLocalTheme(preset.colors);
+                          setThemeLocal(preset.colors);
+                       }}
+                       className={`flex-shrink-0 flex flex-col items-center gap-2 group transition-all p-2 sm:p-3 rounded-2xl border-2 ${isActive ? 'bg-white shadow-md border-brand-accent scale-105' : 'bg-transparent border-transparent hover:bg-white/50 hover:shadow-sm'}`}
+                     >
+                       <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex overflow-hidden border border-stone-200 shadow-inner group-hover:scale-105 transition-transform">
+                         <div className="flex-1" style={{ backgroundColor: preset.colors.primary }}></div>
+                         <div className="flex-1" style={{ backgroundColor: preset.colors.secondary }}></div>
+                         <div className="flex-1" style={{ backgroundColor: preset.colors.accent }}></div>
+                       </div>
+                       <span className={`text-xs font-bold ${isActive ? 'text-brand-brown' : 'text-brand-brown/60 group-hover:text-brand-brown/80'}`}>{preset.name}</span>
+                     </button>
+                   );
+                 })}
+               </div>
+            </div>
             
+            <h4 className="text-sm font-bold text-brand-brown uppercase tracking-wider mb-4 mt-8">Ajustes Avanzados Manuales</h4>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-6 glass-card rounded-2xl">
                 
                 <div className="flex flex-col gap-2">
