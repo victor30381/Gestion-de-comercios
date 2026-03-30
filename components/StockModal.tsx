@@ -184,7 +184,8 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
 
                 if (needsUpdate) {
                     const newTotalCost = updatedIngredients.reduce((sum, item) => sum + item.calculatedCost, 0);
-                    const newCostPerGram = newTotalCost / recipe.totalYieldWeight;
+                    const yieldInGrams = recipe.totalYieldWeight * getConversionFactor(recipe.totalYieldUnit || 'Gr');
+                    const newCostPerGram = newTotalCost / yieldInGrams;
 
                     const recipeRef = doc(db, 'recipes', recipeDoc.id);
                     batch.update(recipeRef, {
@@ -551,8 +552,9 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
                 throw new Error("La receta no tiene un peso final definido para calcular proporciones.");
             }
 
-            // Calculate Ratio: Production / Yield
-            const ratio = qty / recipe.totalYieldWeight;
+            // Calculate Ratio: Production / Yield (Both mapped to base units like Grams/ML)
+            const yieldInGrams = recipe.totalYieldWeight * getConversionFactor(recipe.totalYieldUnit || 'Gr');
+            const ratio = qty / yieldInGrams;
 
             // 1. Pre-Check: Validate Stock Availability
             const missingIngredients: string[] = [];
@@ -569,7 +571,8 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
                         if (oldLog) {
                             const oldRecipe = recipes.find(r => r.id === oldLog.recipeId);
                             if (oldRecipe && oldRecipe.totalYieldWeight) {
-                                const recoveryRatio = oldLog.quantityProduced / oldRecipe.totalYieldWeight;
+                                const oldYieldInGrams = oldRecipe.totalYieldWeight * getConversionFactor(oldRecipe.totalYieldUnit || 'Gr');
+                                const recoveryRatio = oldLog.quantityProduced / oldYieldInGrams;
                                 const amountRecovered = (item.quantityUsed / factor) * recoveryRatio;
 
                                 // Net required is what we need MINUS what we already used (that we are "putting back" conceptually)
@@ -612,7 +615,8 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
                         if (oldLog) {
                             const oldRecipe = recipes.find(r => r.id === oldLog.recipeId);
                             if (oldRecipe && oldRecipe.totalYieldWeight) {
-                                const recoveryRatio = oldLog.quantityProduced / oldRecipe.totalYieldWeight;
+                                const oldYieldInGrams = oldRecipe.totalYieldWeight * getConversionFactor(oldRecipe.totalYieldUnit || 'Gr');
+                                const recoveryRatio = oldLog.quantityProduced / oldYieldInGrams;
                                 netChange += ((item.quantityUsed / factor) * recoveryRatio);
                             }
                         }
@@ -679,7 +683,8 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
                 if (!recipe.totalYieldWeight || recipe.totalYieldWeight <= 0) {
                     throw new Error("La receta original no tiene un peso final definido para calcular proporciones.");
                 }
-                const ratio = log.quantityProduced / recipe.totalYieldWeight;
+                const yieldInGrams = recipe.totalYieldWeight * getConversionFactor(recipe.totalYieldUnit || 'Gr');
+                const ratio = log.quantityProduced / yieldInGrams;
 
                 const batch = writeBatch(db);
                 for (const item of (recipe.ingredients || [])) {
@@ -762,14 +767,14 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
                                     <option value="">Seleccionar receta...</option>
                                     {recipes.map(r => (
                                         <option key={r.id} value={r.id}>
-                                            {r.name} (Rinde: {r.totalYieldWeight}g)
+                                            {r.name} (Rinde: {r.totalYieldWeight} {r.totalYieldUnit || 'Gr'})
                                         </option>
                                     ))}
                                 </select>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-bold text-brand-brown mb-1">Cantidad Obtenida (Gramos)</label>
+                                <label className="block text-sm font-bold text-brand-brown mb-1">Cantidad Obtenida (g/ml/un)</label>
                                 <div className="relative">
                                     <input
                                         type="number"
@@ -780,12 +785,13 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
                                         placeholder="Ej. 1200"
                                         required
                                     />
-                                    <span className="absolute right-3 top-3 text-sm text-brand-brown/40 font-bold">gr</span>
+                                    <span className="absolute right-3 top-3 text-sm text-brand-brown/40 font-bold">base</span>
                                 </div>
                                 {selectedRecipeId && productionQty && (() => {
                                     const r = recipes.find(x => x.id === selectedRecipeId);
                                     if (r && r.totalYieldWeight) {
-                                        const percentage = (parseFloat(productionQty) / r.totalYieldWeight) * 100;
+                                        const yieldInGrams = r.totalYieldWeight * getConversionFactor(r.totalYieldUnit || 'Gr');
+                                        const percentage = (parseFloat(productionQty) / yieldInGrams) * 100;
                                         return (
                                             <p className="text-xs text-brand-brown/60 mt-2 text-right">
                                                 Equivale al <span className="font-bold">{percentage.toFixed(1)}%</span> de la receta original
@@ -823,7 +829,7 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, userId }) => {
                                 <div>
                                     <p className="font-bold text-brand-brown">{log.recipeName}</p>
                                     <p className="text-sm text-brand-brown/60">
-                                        producidos <span className="font-mono font-bold text-brand-brown">{log.quantityProduced}g</span>
+                                        producidos <span className="font-mono font-bold text-brand-brown">{log.quantityProduced} g/ml/un</span>
                                         {' • '}
                                         {log.date?.toDate ? log.date.toDate().toLocaleDateString() : 'Fecha desc.'}
                                     </p>

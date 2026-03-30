@@ -2,6 +2,7 @@ export enum Unit {
   KG = 'Kg',
   GR = 'Gr',
   LT = 'Lt',
+  ML = 'Ml',
   UN = 'Un'
 }
 
@@ -18,7 +19,8 @@ export interface Ingredient {
 export interface RecipeIngredient {
   ingredientId: string;
   type?: 'ingredient' | 'recipe'; // 'ingredient' for standard ingredients, 'recipe' for sub-recipes
-  quantityUsed: number; // In grams if KG/LT, or units if UN
+  quantityUsed: number; // Nominal quantity inputted by user
+  unitSelected?: string; // Actual unit selected, e.g. 'Kg', 'Gr', etc.
   calculatedCost: number;
 }
 
@@ -36,6 +38,7 @@ export interface Recipe {
   name: string;
   ingredients: RecipeIngredient[];
   totalYieldWeight: number;
+  totalYieldUnit?: string;
   totalCost: number;
   costPerGram: number;
   nutritionalInfo?: NutritionalInfo;
@@ -67,11 +70,12 @@ export interface PromoItem {
 // If Unit is LT, input is in ML. (Factor 1000)
 // If Unit is GR, input is in Grams. (Factor 1)
 // If Unit is UN, input is in Units. (Factor 1)
-export const getConversionFactor = (unit: Unit): number => {
+export const getConversionFactor = (unit: string): number => {
   switch (unit) {
     case Unit.KG: return 1000;
     case Unit.LT: return 1000;
     case Unit.GR: return 1;
+    case Unit.ML: return 1;
     case Unit.UN: return 1;
     default: return 1;
   }

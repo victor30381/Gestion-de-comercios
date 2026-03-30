@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, onSnapshot, addDoc, doc, getDoc } from 'firebase/firestore';
-import { Recipe } from '../types';
+import { Recipe, getConversionFactor } from '../types';
 
 interface CatalogPageProps {
     userId: string;
@@ -109,9 +109,10 @@ const ProductCard: React.FC<{
                                     <span className="bg-white/60 px-2 py-0.5 rounded-md border border-brand-brown/5">{recipe.isPromo ? 'Promoción Completa' : (recipe.portionWeight ? `Porción: ${recipe.portionWeight}g` : 'Receta Entera')}</span>
                                 </div>
                                 {(() => {
-                                    const factor = recipe.isPromo ? 1 : (!recipe.portionWeight ? 1 : (recipe.portionWeight > recipe.totalYieldWeight 
-                                        ? 1 / recipe.totalYieldWeight 
-                                        : recipe.portionWeight / recipe.totalYieldWeight));
+                                    const yieldInGrams = recipe.totalYieldWeight * getConversionFactor(recipe.totalYieldUnit || 'Gr');
+                                    const factor = recipe.isPromo ? 1 : (!recipe.portionWeight ? 1 : (recipe.portionWeight > yieldInGrams 
+                                        ? 1 / yieldInGrams 
+                                        : recipe.portionWeight / yieldInGrams));
                                     const cal = Math.round((recipe.nutritionalInfo?.calories || 0) * factor);
                                     const prot = Math.round((recipe.nutritionalInfo?.protein || 0) * factor);
                                     const carbs = Math.round((recipe.nutritionalInfo?.carbs || 0) * factor);
@@ -334,7 +335,7 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ userId }) => {
                 recipeId: item.recipe.id,
                 name: item.recipe.name,
                 amount: item.recipe.totalYieldWeight || 0,
-                unit: 'un',
+                unit: item.recipe.totalYieldUnit || 'un',
                 quantity: item.quantity,
                 price: item.recipe.catalogPrice || 0,
             }));

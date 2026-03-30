@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, QuerySnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Recipe, Ingredient } from '../types';
+import { Recipe, Ingredient, getConversionFactor } from '../types';
 import jsPDF from 'jspdf';
 import { useTheme } from './ThemeContext';
 
@@ -20,6 +20,10 @@ const Calculator: React.FC<Props> = ({ userId }) => {
   const [selectedRecipeId, setSelectedRecipeId] = useState('');
   const [sellWeight, setSellWeight] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  const [activeTab, setActiveTab] = useState<'sales' | 'production'>('sales');
+  const [prodRecipeId, setProdRecipeId] = useState('');
+  const [desiredYield, setDesiredYield] = useState('');
 
   useEffect(() => {
     const q = query(collection(db, 'recipes'), where('userId', '==', userId));
@@ -61,6 +65,11 @@ const Calculator: React.FC<Props> = ({ userId }) => {
   const realCost = costPerGram * weight;
   const suggestedPrice = realCost * 3;
   const profit = suggestedPrice - realCost;
+
+  const prodRecipe = recipes.find(r => r.id === prodRecipeId);
+  const ratioProd = prodRecipe && parseFloat(desiredYield) > 0 
+      ? parseFloat(desiredYield) / prodRecipe.totalYieldWeight 
+      : 0;
 
   const [customPrice, setCustomPrice] = useState('');
 
@@ -168,11 +177,13 @@ const Calculator: React.FC<Props> = ({ userId }) => {
           if (selectedRecipe.isPromo) {
             factor = 1; // Para promos, los nutrientes ya son el valor total calculado
           } else if (portionWeight > 0 && selectedRecipe.totalYieldWeight > 0) {
-            factor = portionWeight > selectedRecipe.totalYieldWeight 
-              ? 1 / selectedRecipe.totalYieldWeight 
-              : portionWeight / selectedRecipe.totalYieldWeight;
+            const yieldInGrams = selectedRecipe.totalYieldWeight * getConversionFactor(selectedRecipe.totalYieldUnit || 'Gr');
+            factor = portionWeight > yieldInGrams 
+              ? 1 / yieldInGrams 
+              : portionWeight / yieldInGrams;
           } else if (weight > 0 && selectedRecipe.totalYieldWeight > 0) {
-            factor = weight / selectedRecipe.totalYieldWeight;
+            const yieldInGrams = selectedRecipe.totalYieldWeight * getConversionFactor(selectedRecipe.totalYieldUnit || 'Gr');
+            factor = weight / yieldInGrams;
           }
 
           const calcValue = (val: number | undefined) => {
@@ -396,49 +407,183 @@ const Calculator: React.FC<Props> = ({ userId }) => {
     }
   };
 
+  const generateProductionPDF = () => {
+    if (!prodRecipe || ratioProd <= 0) return;
+
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [80, 200]
+      });
+
+      const drawContent = (withLogo: boolean) => {
+        let currentY = withLogo ? 60 : 20;
+
+        const centerText = (text: string, y: number, fontSize: number, fontType: string = "normal") => {
+          doc.setFontSize(fontSize);
+          doc.setFont("helvetica", fontType);
+          doc.text(text, 40, y, { align: "center", maxWidth: 74 });
+        };
+
+        centerText("ORDEN DE PRODUCCION", currentY, 11, "bold");
+        currentY += 8;
+        
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        const splitTitle = doc.splitTextToSize(prodRecipe.name.toUpperCase(), 70);
+        doc.text(splitTitle, 40, currentY, { align: "center" });
+        currentY += (splitTitle.length * 6) + 4;
+
+        centerText(`PRODUCCION OBJETIVO: ${desiredYield} ${prodRecipe.totalYieldUnit || 'Gr'}`, currentY, 10, "bold");
+        currentY += 4;
+        
+        doc.setLineWidth(0.5);
+        doc.line(5, currentY, 75, currentY);
+        currentY += 6;
+
+        centerText("MATERIA PRIMA NECESARIA", currentY, 10, "bold");
+        currentY += 6;
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        
+        if (prodRecipe.isPromo) {
+          prodRecipe.promoItems?.forEach(item => {
+             const qty = item.quantityUsed * ratioProd;
+             const sub = recipes.find(r => r.id === item.recipeId);
+             const name = sub?.name || "Receta";
+             
+             if (currentY > 185) { doc.addPage(); currentY = 15; }
+             
+             const splitName = doc.splitTextToSize(name, 45);
+             const lineCount = splitName.length;
+             doc.text(splitName, 5, currentY);
+             doc.setFont("helvetica", "bold");
+             doc.text(`${Number(qty.toFixed(2))} Un`, 75, currentY, { align: "right" });
+             doc.setFont("helvetica", "normal");
+             currentY += (5 * lineCount);
+          });
+        } else {
+          prodRecipe.ingredients?.forEach(ingItem => {
+             const qty = ingItem.quantityUsed * ratioProd;
+             let name = "Desconocido";
+             if (ingItem.type === 'recipe') {
+                 name = recipes.find(r => r.id === ingItem.ingredientId)?.name || name;
+             } else {
+                 name = ingredients.find(i => i.id === ingItem.ingredientId)?.name || name;
+             }
+             
+             if (currentY > 185) { doc.addPage(); currentY = 15; }
+             
+             const splitName = doc.splitTextToSize(name, 45);
+             const lineCount = splitName.length;
+             doc.text(splitName, 5, currentY);
+             doc.setFont("helvetica", "bold");
+             doc.text(`${Number(qty.toFixed(2))} ${ingItem.unitSelected || 'Gr'}`, 75, currentY, { align: "right" });
+             doc.setFont("helvetica", "normal");
+             currentY += (5 * lineCount);
+          });
+        }
+        
+        currentY += 5;
+        doc.setLineWidth(0.5);
+        doc.line(5, currentY, 75, currentY);
+        currentY += 5;
+        centerText("GENERADO AUTOMATICAMENTE", currentY, 8, "italic");
+        
+        const cleanName = prodRecipe.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+        doc.save(`produccion_${cleanName}.pdf`);
+      };
+
+      if (shopLogoBase64) {
+        const logoImg = new Image();
+        logoImg.onload = () => {
+          try { doc.addImage(logoImg, 'PNG', 15, 5, 50, 50, undefined, 'FAST'); drawContent(true); } 
+          catch (e) { drawContent(false); }
+        };
+        logoImg.onerror = () => drawContent(false);
+        logoImg.src = shopLogoBase64;
+      } else {
+        const logoImg = new Image();
+        logoImg.src = `${import.meta.env.BASE_URL}logo.png`;
+        logoImg.onload = () => {
+          try { doc.addImage(logoImg, 'PNG', 15, 5, 50, 50, undefined, 'FAST'); drawContent(true); }
+          catch (e) { drawContent(false); }
+        };
+        logoImg.onerror = () => drawContent(false);
+      }
+
+    } catch (err: any) {
+      console.error("PDF Error:", err);
+      alert(`Error al generar PDF: ${err.message}`);
+    }
+  };
+
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
-      <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-brand-brown/10">
-        <h2 className="text-xl font-bold text-brand-brown mb-4 sm:mb-6 font-serif">Calculadora de Venta</h2>
-
-        {errorMsg && (
-          <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg mb-4 text-sm">
-            {errorMsg}
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-brand-brown mb-1">Seleccionar Receta</label>
-            <select
-              value={selectedRecipeId}
-              onChange={(e) => setSelectedRecipeId(e.target.value)}
-              className="w-full p-3 rounded-xl border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 bg-brand-beige/50 text-brand-brown cursor-pointer"
-            >
-              <option value="">-- Elige una preparación --</option>
-              {recipes.map(r => (
-                <option key={r.id} value={r.id}>{r.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="opacity-100 transition-opacity duration-300">
-            <label className="block text-sm font-bold text-brand-brown mb-1">
-              Cantidad a Vender (Peso/Unidad)
-            </label>
-            <input
-              type="number"
-              value={sellWeight}
-              onChange={(e) => setSellWeight(e.target.value)}
-              disabled={!selectedRecipeId}
-              className="w-full p-3 rounded-xl border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-lg font-semibold bg-brand-beige/50 disabled:bg-gray-100 text-brand-brown placeholder-brand-brown/40"
-              placeholder="0"
-            />
-          </div>
-        </div>
+    <div className="space-y-4 sm:space-y-6 animate-fade-in relative max-w-lg mx-auto w-full">
+      {/* TABS */}
+      <div className="flex bg-brand-brown/5 p-1 rounded-2xl mb-4 sm:mb-6 text-center">
+        <button
+          onClick={() => setActiveTab('sales')}
+          className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${activeTab === 'sales' ? 'bg-brand-brown text-white shadow-md' : 'text-brand-brown/60 hover:text-brand-brown'}`}
+        >
+          💰 Venta
+        </button>
+        <button
+          onClick={() => setActiveTab('production')}
+          className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${activeTab === 'production' ? 'bg-brand-brown text-white shadow-md' : 'text-brand-brown/60 hover:text-brand-brown'}`}
+        >
+          👩‍🍳 Materia Prima
+        </button>
       </div>
 
-      {selectedRecipeId && weight > 0 && (
+      {activeTab === 'sales' ? (
+        <>
+          <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-brand-brown/10">
+            <h2 className="text-xl font-bold text-brand-brown mb-4 sm:mb-6 font-serif">Calculadora de Venta</h2>
+
+            {errorMsg && (
+              <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg mb-4 text-sm">
+                {errorMsg}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-brand-brown mb-1">Seleccionar Receta</label>
+                <select
+                  value={selectedRecipeId}
+                  onChange={(e) => setSelectedRecipeId(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 bg-brand-beige/50 text-brand-brown cursor-pointer"
+                >
+                  <option value="">-- Elige una preparación --</option>
+                  {recipes.map(r => (
+                    <option key={r.id} value={r.id}>{r.name} (Rinde: {r.totalYieldWeight} {r.totalYieldUnit || 'Gr'})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="opacity-100 transition-opacity duration-300">
+                <label className="block text-sm font-bold text-brand-brown mb-1">
+                  Cantidad a Vender (Peso/Unidad)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={sellWeight}
+                    onChange={(e) => setSellWeight(e.target.value)}
+                    disabled={!selectedRecipeId}
+                    className="w-full p-3 rounded-xl border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-lg font-semibold bg-brand-beige/50 disabled:bg-gray-100 text-brand-brown placeholder-brand-brown/40"
+                    placeholder="0"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-brand-brown/50 font-bold uppercase">{selectedRecipe?.totalYieldUnit || ''}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {selectedRecipeId && weight > 0 && (
         <div className="space-y-4">
           {/* Main Result Card */}
           <div className="bg-brand-brown text-white p-5 sm:p-6 rounded-3xl shadow-lg transform transition-all duration-300 hover:scale-[1.02]">
@@ -478,9 +623,9 @@ const Calculator: React.FC<Props> = ({ userId }) => {
           <div className="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-brand-brown/10">
             <h4 className="font-bold text-brand-brown mb-3 font-serif">{selectedRecipe?.isPromo ? 'Detalles de la Promoción' : 'Detalles de la Receta'}</h4>
             <div className="text-sm text-brand-brown/80 flex flex-col gap-2 sm:grid sm:grid-cols-2">
-              {!selectedRecipe?.isPromo && <div className="bg-brand-beige/30 p-2 sm:p-0 sm:bg-transparent rounded flex justify-between sm:block"><span>Yield Total:</span> <span className="font-medium sm:ml-1">{selectedRecipe?.totalYieldWeight}</span></div>}
+              {!selectedRecipe?.isPromo && <div className="bg-brand-beige/30 p-2 sm:p-0 sm:bg-transparent rounded flex justify-between sm:block"><span>Rendimiento:</span> <span className="font-medium sm:ml-1">{selectedRecipe?.totalYieldWeight} {selectedRecipe?.totalYieldUnit || 'gr'}</span></div>}
               <div className={`bg-brand-beige/30 p-2 sm:p-0 sm:bg-transparent rounded flex justify-between sm:block ${selectedRecipe?.isPromo ? 'col-span-2' : ''}`}><span>Costo Total:</span> <span className="font-medium sm:ml-1">${selectedRecipe?.totalCost.toFixed(2)}</span></div>
-              {!selectedRecipe?.isPromo && <div className="bg-brand-beige/30 p-2 sm:p-0 sm:bg-transparent rounded col-span-2 flex justify-between sm:block"><span>Costo Base:</span> <span className="font-medium sm:ml-1">${selectedRecipe?.costPerGram.toFixed(4)} / gr</span></div>}
+              {!selectedRecipe?.isPromo && <div className="bg-brand-beige/30 p-2 sm:p-0 sm:bg-transparent rounded col-span-2 flex justify-between sm:block"><span>Costo Base:</span> <span className="font-medium sm:ml-1">${selectedRecipe?.costPerGram.toFixed(4)} / {selectedRecipe?.totalYieldUnit || 'gr'}</span></div>}
             </div>
           </div>
 
@@ -507,6 +652,106 @@ const Calculator: React.FC<Props> = ({ userId }) => {
               Generar Ticket Revendedor
             </button>
           </div>
+        </div>
+        )}
+        </>
+      ) : (
+        <div className="space-y-4 sm:space-y-6 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-brand-brown/10">
+            <h2 className="text-xl font-bold text-brand-brown mb-4 sm:mb-6 font-serif flex items-center gap-2">
+               <span>⚖️</span> Materia Prima Necesaria
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-brand-brown mb-1">Seleccionar Receta base</label>
+                <select
+                  value={prodRecipeId}
+                  onChange={(e) => setProdRecipeId(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 bg-brand-beige/50 text-brand-brown cursor-pointer"
+                >
+                  <option value="">-- Elige una preparación --</option>
+                  {recipes.map(r => (
+                    <option key={r.id} value={r.id}>{r.name} (Rinde: {r.totalYieldWeight} {r.totalYieldUnit || 'Gr'})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="opacity-100 transition-opacity duration-300">
+                <label className="block text-sm font-bold text-brand-brown mb-1">
+                  Cantidad Deseada a Producir ({prodRecipe ? (prodRecipe.totalYieldUnit || 'Gr') : 'Un/Peso'})
+                </label>
+                <div className="relative">
+                    <input
+                    type="number"
+                    value={desiredYield}
+                    onChange={(e) => setDesiredYield(e.target.value)}
+                    disabled={!prodRecipeId}
+                    className="w-full p-3 rounded-xl border border-brand-brown/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 text-lg font-semibold bg-brand-beige/50 disabled:bg-gray-100 text-brand-brown placeholder-brand-brown/40"
+                    placeholder="Ej: 17"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-brand-brown/50 font-bold uppercase">{prodRecipe?.totalYieldUnit || ''}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {prodRecipe && ratioProd > 0 && (
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-brand-brown/10">
+              <h3 className="font-bold text-brand-brown mb-4 pb-3 border-b border-brand-brown/10 flex items-center justify-between">
+                <span>Ingredientes Necesarios</span>
+                <span className="text-[10px] bg-brand-brown text-white px-2 py-1 rounded-lg">Factor: {ratioProd.toFixed(2)}x</span>
+              </h3>
+              
+              <ul className="space-y-3">
+                {prodRecipe.isPromo ? (
+                    prodRecipe.promoItems?.map((item, idx) => {
+                        const qty = item.quantityUsed * ratioProd;
+                        const sub = recipes.find(r => r.id === item.recipeId);
+                        const name = sub?.name || "Receta desconocida";
+                        return (
+                            <li key={idx} className="flex justify-between items-center bg-brand-beige/30 p-4 rounded-xl border border-brand-brown/5 shadow-sm">
+                                <span className="font-medium text-brand-brown">{name}</span>
+                                <span className="font-mono text-lg font-bold text-brand-brown bg-white px-3 py-1 rounded-md shadow-sm border border-brand-brown/5">
+                                    {qty.toLocaleString('es-ES', {maximumFractionDigits: 2})} Un
+                                </span>
+                            </li>
+                        );
+                    })
+                ) : (
+                    prodRecipe.ingredients?.map((ingItem, idx) => {
+                        const qty = ingItem.quantityUsed * ratioProd;
+                        let name = "Desconocido";
+                        if (ingItem.type === 'recipe') {
+                            name = recipes.find(r => r.id === ingItem.ingredientId)?.name || name;
+                        } else {
+                            name = ingredients.find(i => i.id === ingItem.ingredientId)?.name || name;
+                        }
+                        return (
+                            <li key={idx} className="flex justify-between items-center bg-brand-beige/30 p-4 rounded-xl border border-brand-brown/5 shadow-sm">
+                                <span className="font-medium text-brand-brown">{name}</span>
+                                <span className="font-mono text-lg font-bold text-brand-brown bg-white px-3 py-1 rounded-md shadow-sm border border-brand-brown/5">
+                                    {qty.toLocaleString('es-ES', {maximumFractionDigits: 2})} <span className="text-sm font-normal ml-0.5">{ingItem.unitSelected || 'Gr'}</span>
+                                </span>
+                            </li>
+                        );
+                    })
+                )}
+              </ul>
+              
+              <div className="mt-6 pt-4 border-t border-brand-brown/10">
+                <button
+                  onClick={generateProductionPDF}
+                  className="w-full bg-[#2C1810] text-white py-3 sm:py-4 rounded-xl font-bold shadow-md hover:bg-black transition flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Descargar Orden de Producción (PDF)
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
