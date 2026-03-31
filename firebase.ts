@@ -5,13 +5,13 @@ import { getAnalytics } from "firebase/analytics";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyD8bIUJRuVCE10Uvap1z_aCVpc1mstcMoc",
-  authDomain: "calculadora-keto-1eb5e.firebaseapp.com",
-  projectId: "calculadora-keto-1eb5e",
-  storageBucket: "calculadora-keto-1eb5e.firebasestorage.app",
-  messagingSenderId: "503210674682",
-  appId: "1:503210674682:web:fa80952a2590c683b6fc43",
-  measurementId: "G-71LLSKPZSX"
+  apiKey: "AIzaSyB8V-IaUWw-5M44lsBpBedHM22LN6CknkM",
+  authDomain: "gestion-de-comercio-483a3.firebaseapp.com",
+  projectId: "gestion-de-comercio-483a3",
+  storageBucket: "gestion-de-comercio-483a3.firebasestorage.app",
+  messagingSenderId: "1083154392089",
+  appId: "1:1083154392089:web:99d224c23ca3b9b9ce3688",
+  measurementId: "G-EXZD03V8WV"
 };
 
 const app = initializeApp(firebaseConfig);
